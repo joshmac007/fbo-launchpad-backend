@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { loginUser, logoutUser, getStoredToken } from '../services/authService';
+import { decodeJWT } from '../utils/jwt';
 
 export const AuthContext = createContext(null);
 
@@ -9,21 +10,22 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Development mode: Auto-login
-    if (process.env.NODE_ENV === 'development') {
-      setIsAuthenticated(true);
-      setUser({ role: 'csr' });
-      localStorage.setItem('accessToken', 'dev-token');
-      setLoading(false);
-      return;
-    }
-
     const token = getStoredToken();
     if (token) {
-      // For MVP, just check if token exists
-      setIsAuthenticated(true);
-      // TODO: Decode token to get user info or make API call to /me endpoint
-      setUser({ role: 'csr' }); // Placeholder user info
+      const decoded = decodeJWT(token);
+      if (decoded) {
+        setIsAuthenticated(true);
+        // Store all user data from JWT without filtering specific fields
+        setUser(decoded);
+      } else {
+        // Invalid token, force logout
+        logoutUser();
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    } else {
+      setIsAuthenticated(false);
+      setUser(null);
     }
     setLoading(false);
   }, []);
@@ -32,8 +34,13 @@ export const AuthProvider = ({ children }) => {
     try {
       const data = await loginUser(email, password);
       setIsAuthenticated(true);
-      // TODO: Set actual user data from token or API response
-      setUser({ role: 'csr' });
+      const decoded = decodeJWT(data.token);
+      if (decoded) {
+        // Store all user data from JWT without filtering
+        setUser(decoded);
+      } else {
+        setUser(null);
+      }
       return data;
     } catch (error) {
       throw error;

@@ -1,15 +1,15 @@
 export enum OrderStatus {
-  PENDING = 'Pending',
-  IN_PROGRESS = 'In Progress',
-  COMPLETED = 'Completed'
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED'
 }
 
 export interface FuelOrder {
   id: number;
-  aircraft: string;
+  tail_number: string;
   customer: string;
-  fuelType: string;
-  quantity: number;
+  fuel_type: string;
+  requested_amount: number;
   status: OrderStatus;
-  created: string;
+  created_at: string;
 } 

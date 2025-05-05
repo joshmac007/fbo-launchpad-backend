@@ -1,8 +1,8 @@
-import apiService from './apiService';
+import apiService, { getApiUrl } from './apiService';
 
 export const getFuelOrders = async (params = {}) => {
   try {
-    const response = await apiService.get('/fuel-orders', { params });
+    const response = await apiService.get(getApiUrl('/fuel-orders/'), { params });
     return response.data;
   } catch (error) {
     console.error("Error fetching fuel orders:", error.response?.data || error.message);
@@ -12,7 +12,7 @@ export const getFuelOrders = async (params = {}) => {
 
 export const createFuelOrder = async (orderData) => {
   try {
-    const response = await apiService.post('/fuel-orders', orderData);
+    const response = await apiService.post(getApiUrl('/fuel-orders/'), orderData);
     return response.data; // Assuming { message, fuel_order } structure
   } catch (error) {
     console.error("Error creating fuel order:", error.response?.data || error.message);
@@ -22,7 +22,7 @@ export const createFuelOrder = async (orderData) => {
 
 export const getFuelOrderById = async (orderId) => {
   try {
-    const response = await apiService.get(`/fuel-orders/${orderId}`);
+    const response = await apiService.get(getApiUrl(`/fuel-orders/${orderId}/`));
     return response.data.fuel_order;
   } catch (error) {
     console.error(`Error fetching fuel order ${orderId}:`, error.response?.data || error.message);
@@ -42,7 +42,7 @@ export const reviewFuelOrder = async (orderId) => {
 
 export const exportFuelOrdersCsv = async (params = {}) => {
   try {
-    const response = await apiService.get('/fuel-orders/export', {
+    const response = await apiService.get('/fuel-orders/export/', {
       params,
       responseType: 'blob', // Important: Expect file data
     });

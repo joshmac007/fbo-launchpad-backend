@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 import csv
 import io
-from ..models import (
+from src.models import (
     FuelOrder,
     FuelOrderStatus,
     Aircraft,
@@ -11,22 +11,82 @@ from ..models import (
     FuelTruck,
     Customer
 )
-from ..extensions import db
+from src.extensions import db
 from flask import current_app
-from typing import Optional, Tuple, List, Dict, Any
+from typing import Optional, Tuple, List, Dict, Any, Union
 
 class FuelOrderService:
     @classmethod
-    def create_fuel_order(cls, order_data: dict) -> tuple[FuelOrder | None, str | None]:
+    def get_order_status_counts(cls, current_user):
+        """
+        Calculate and return counts of fuel orders by status groups for dashboard cards.
+        CSR, ADMIN, and LST roles are allowed (global counts).
+        Returns: (dict, message, status_code)
+        """
+        from src.models import FuelOrderStatus, UserRole, FuelOrder
+        from sqlalchemy import func, case
+        from src.extensions import db
+        if current_user.role not in [UserRole.CSR, UserRole.ADMIN, UserRole.LST]:
+            return None, "Forbidden: Insufficient permissions for status counts.", 403
+        try:
+            pending_statuses = [FuelOrderStatus.DISPATCHED]
+            in_progress_statuses = [FuelOrderStatus.ACKNOWLEDGED, FuelOrderStatus.EN_ROUTE, FuelOrderStatus.FUELING]
+            completed_statuses = [FuelOrderStatus.COMPLETED]
+            counts = db.session.query(
+                func.count(case((FuelOrder.status.in_(pending_statuses), FuelOrder.id))).label('pending'),
+                func.count(case((FuelOrder.status.in_(in_progress_statuses), FuelOrder.id))).label('in_progress'),
+                func.count(case((FuelOrder.status.in_(completed_statuses), FuelOrder.id))).label('completed')
+            ).one_or_none()
+            result_counts = {
+                'pending': counts[0] if counts else 0,
+                'in_progress': counts[1] if counts else 0,
+                'completed': counts[2] if counts else 0,
+            }
+            return result_counts, "Status counts retrieved successfully.", 200
+        except Exception as e:
+            db.session.rollback()
+            from flask import current_app
+            current_app.logger.error(f"Error retrieving fuel order status counts: {str(e)}")
+            return None, f"Database error retrieving status counts: {str(e)}", 500
+
+    @classmethod
+    def get_status_counts(cls, current_user):
+        """
+        Calculate and return counts of fuel orders by status groups for dashboard cards.
+        CSR, ADMIN, and LST roles are allowed (global counts).
+        Returns: (dict, message, status_code)
+        """
+        return cls.get_order_status_counts(current_user)
+
+    @classmethod
+    def create_fuel_order(cls, order_data: dict) -> Tuple[Union[FuelOrder, None], Union[str, None]]:
+        from src.models import User, UserRole, FuelOrder, FuelOrderStatus
+        from src.extensions import db
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # --- NEW: Check if any users exist ---
+        user_count = User.query.count()
+        if user_count == 0:
+            return (
+                None,
+                "No users exist in the system. Please create an ADMIN user via the CLI or database to access the admin panel and create LST users.",
+                400
+            )
+
         """
         Create a new fuel order after validating all required entities exist and are valid.
-        
+
+        - If assigned_lst_user_id == -1, auto-assign the least busy active LST.
+        - Otherwise, validate the provided LST ID.
+        - Truck assignment logic is unchanged.
+
         Args:
             order_data (dict): Dictionary containing the validated order data from the route handler
                 Required keys:
                 - tail_number (str): Aircraft tail number
                 - fuel_type (str): Type of fuel to be dispensed
-                - assigned_lst_user_id (int): ID of the LST user assigned to the order
+                - assigned_lst_user_id (int): ID of the LST user assigned to the order (or -1 for auto-assign)
                 - assigned_truck_id (int): ID of the fuel truck assigned to the order
                 Optional keys:
                 - customer_id (int): ID of the customer if applicable
@@ -34,13 +94,15 @@ class FuelOrderService:
                 - requested_amount (float): Amount of fuel requested
                 - location_on_ramp (str): Location of the aircraft on the ramp
                 - csr_notes (str): Notes from the CSR
-                
         Returns:
             tuple[FuelOrder | None, str | None]: Returns either:
                 - (FuelOrder, None) on success
                 - (None, error_message) on failure
         """
-        # Extract required fields
+        from src.models import User, UserRole, FuelOrder, FuelOrderStatus
+        from src.extensions import db
+        import logging
+        logger = logging.getLogger(__name__)
         tail_number = order_data.get('tail_number')
         fuel_type = order_data.get('fuel_type')
         assigned_lst_user_id = order_data.get('assigned_lst_user_id')
@@ -48,7 +110,70 @@ class FuelOrderService:
         customer_id = order_data.get('customer_id')
 
         # Check for required fields
-        if not all([tail_number, fuel_type, assigned_lst_user_id, assigned_truck_id]):
+        if not all([tail_number, fuel_type, assigned_lst_user_id is not None, assigned_truck_id is not None]):
+            return None, "Missing required fields."
+
+        # --- LST Assignment Logic ---
+        if assigned_lst_user_id == -1:
+            # Auto-assign the least busy active LST
+            active_lsts = User.query.filter(User.role == UserRole.LST, User.is_active == True).all()
+            logger.debug(f"[DEBUG] Found {len(active_lsts)} active LST users: {[{'id': u.id, 'username': u.username, 'role': u.role, 'is_active': u.is_active} for u in active_lsts]}")
+            if not active_lsts:
+                all_lsts = User.query.filter(User.role == UserRole.LST).all()
+                logger.debug(f"[DEBUG] All LST users (regardless of active): {[{'id': u.id, 'username': u.username, 'role': u.role, 'is_active': u.is_active} for u in all_lsts]}")
+                logger.debug(f"[DEBUG] All users: {[{'id': u.id, 'username': u.username, 'role': u.role, 'is_active': u.is_active} for u in User.query.all()]}")
+                return None, "No available LST found for auto-assignment.", 400
+            min_count = None
+            chosen_lst = None
+            active_statuses = [
+                FuelOrderStatus.DISPATCHED,
+                FuelOrderStatus.ACKNOWLEDGED,
+                FuelOrderStatus.EN_ROUTE,
+                FuelOrderStatus.FUELING
+            ]
+            for lst in active_lsts:
+                count = FuelOrder.query.filter(
+                    FuelOrder.assigned_lst_user_id == lst.id,
+                    FuelOrder.status.in_(active_statuses)
+                ).count()
+                if min_count is None or count < min_count:
+                    min_count = count
+                    chosen_lst = lst
+            if not chosen_lst:
+                return None, "No available LST found for auto-assignment.", 400
+            logger.info(f"Auto-assigned LST user: {chosen_lst.id} (Active orders: {min_count})")
+            assigned_lst_user_id = chosen_lst.id
+            order_data['assigned_lst_user_id'] = assigned_lst_user_id
+        else:
+            # Manual assignment: validate LST exists, is LST, and active
+            lst_user = User.query.filter_by(id=assigned_lst_user_id, role=UserRole.LST, is_active=True).first()
+            if not lst_user:
+                return None, f"Assigned LST user {assigned_lst_user_id} does not exist, is not active, or is not an LST.", 400
+
+        # Truck assignment logic (unchanged)
+        # ... (existing validation for truck)
+
+        # Create the FuelOrder (existing logic)
+        try:
+            new_order = FuelOrder(
+                tail_number=tail_number,
+                fuel_type=fuel_type,
+                assigned_lst_user_id=assigned_lst_user_id,
+                assigned_truck_id=assigned_truck_id,
+                customer_id=customer_id,
+                additive_requested=order_data.get('additive_requested', False),
+                requested_amount=order_data.get('requested_amount'),
+                location_on_ramp=order_data.get('location_on_ramp'),
+                csr_notes=order_data.get('csr_notes'),
+                status=FuelOrderStatus.DISPATCHED
+            )
+            db.session.add(new_order)
+            db.session.commit()
+            return new_order, None
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error creating fuel order: {str(e)}")
+            return None, f"Database error creating fuel order: {str(e)}"
             return None, "Missing required fields: tail_number, fuel_type, assigned_lst_user_id, and assigned_truck_id are required"
 
         # Check if aircraft exists

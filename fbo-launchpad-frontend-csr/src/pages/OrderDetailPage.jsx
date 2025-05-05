@@ -67,16 +67,16 @@ const OrderDetailPage = () => {
         <dd>{order.status}</dd>
 
         <dt>Customer</dt>
-        <dd>{order.customer_name}</dd>
+        <dd>{order.customer}</dd>
 
         <dt>Aircraft</dt>
-        <dd>{order.aircraft_registration}</dd>
+        <dd>{order.tail_number}</dd>
 
         <dt>Fuel Type</dt>
         <dd>{order.fuel_type}</dd>
 
-        <dt>Quantity (Gallons)</dt>
-        <dd>{order.quantity_gallons}</dd>
+        <dt>Requested Amount (Gallons)</dt>
+        <dd>{order.requested_amount}</dd>
 
         <dt>Created At</dt>
         <dd>{formatDisplayValue(order.created_at, 'datetime')}</dd>

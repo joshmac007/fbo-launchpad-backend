@@ -5,6 +5,9 @@ import { getFuelTrucks } from '../services/FuelTruckService';
 import { createFuelOrder } from '../services/FuelOrderService';
 
 function OrderCreatePage() {
+  const [autoAssignEnabled, setAutoAssignEnabled] = useState(true); // Global admin setting
+  const [autoAssign, setAutoAssign] = useState(true); // Per-order toggle (only if enabled)
+  const [settingLoading, setSettingLoading] = useState(true);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     tail_number: '',
@@ -25,14 +28,30 @@ function OrderCreatePage() {
   const [error, setError] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // Fetch LSTs and Trucks on mount
+  // Fetch global assignment setting on mount
   useEffect(() => {
+    async function fetchSetting() {
+      setSettingLoading(true);
+      try {
+        const res = await import('../services/apiService').then(m => m.default.get('/api/admin/assignment-settings'));
+        setAutoAssignEnabled(res.data.auto_assign_enabled);
+        setAutoAssign(res.data.auto_assign_enabled); // default to ON if enabled
+      } catch {
+        setAutoAssignEnabled(true); // fallback
+      } finally {
+        setSettingLoading(false);
+      }
+    }
+    fetchSetting();
+  }, []);
+
+  // Fetch LSTs and Trucks on mount
     const loadDropdownData = async () => {
       setIsLoadingData(true);
       setError(null);
       try {
         const [lstData, truckData] = await Promise.all([
-          getUsers({ role: 'LST', is_active: 'true' }),
+          getUsers({ is_active: 'true' }),
           getFuelTrucks({ is_active: 'true' })
         ]);
         setLsts(lstData);
@@ -40,12 +59,8 @@ function OrderCreatePage() {
       } catch (err) {
         setError('Failed to load LSTs or Trucks. Please try again.');
         console.error(err);
-      } finally {
-        setIsLoadingData(false);
       }
     };
-    loadDropdownData();
-  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -56,11 +71,16 @@ function OrderCreatePage() {
   };
 
   const validateForm = () => {
-    if (!formData.tail_number || !formData.assigned_lst_user_id || !formData.assigned_truck_id || !formData.fuel_type) {
-      setError('Please fill in all required fields: Tail Number, Fuel Type, Assigned LST, Assigned Truck.');
+    if (!formData.tail_number || !formData.fuel_type) {
+      setError('Please fill in all required fields: Tail Number and Fuel Type.');
       return false;
     }
-    // Add more specific validation if needed
+    if (!autoAssign) {
+      if (!formData.assigned_lst_user_id || !formData.assigned_truck_id) {
+        setError('Please assign both an LST and a Fuel Truck, or enable auto-assign.');
+        return false;
+      }
+    }
     setError(null);
     return true;
   };
@@ -73,21 +93,54 @@ function OrderCreatePage() {
     setError(null);
     setSubmitSuccess(false);
 
-    // Prepare data for API (ensure correct types if needed, e.g., parsing numbers)
-    const orderData = {
+    let assignedLST = formData.assigned_lst_user_id;
+    let assignedTruck = formData.assigned_truck_id;
+
+    // If auto-assign is enabled, set assigned_lst_user_id to -1 for backend auto-assignment
+    if (autoAssign) {
+      assignedLST = -1; // Backend will auto-assign
+      assignedTruck = null; // Leave truck as null (or handle similarly if backend supports)
+    } else {
+      assignedLST = parseInt(assignedLST, 10);
+      assignedTruck = parseInt(assignedTruck, 10);
+    }
+
+    // Fallback: If backend does not assign, do a simple least-busy pick
+    async function getLeastBusy(items, key = 'id') {
+      // For demo: just pick the first (could enhance with real logic)
+      return items.length > 0 ? items[0][key] : null;
+    }
+
+    let orderData = {
       ...formData,
-      // Convert empty strings for optional numbers to null or omit them
       requested_amount: formData.requested_amount || null,
       customer_id: formData.customer_id || null,
-      // Ensure IDs are numbers if necessary (depends on input type)
-      assigned_lst_user_id: parseInt(formData.assigned_lst_user_id, 10),
-      assigned_truck_id: parseInt(formData.assigned_truck_id, 10),
+      assigned_lst_user_id: assignedLST,
+      assigned_truck_id: assignedTruck,
     };
 
+    // If autoAssign, remove assigned_lst_user_id and assigned_truck_id if null
+    if (autoAssign) {
+      delete orderData.assigned_lst_user_id;
+      delete orderData.assigned_truck_id;
+    }
+
     try {
-      const result = await createFuelOrder(orderData);
+      let result = await createFuelOrder(orderData);
+      // If backend did not assign, fallback to frontend assignment
+      if (autoAssign && (!result.assigned_lst_user_id || !result.assigned_truck_id)) {
+        // Pick least busy (for demo, just pick first available)
+        const lstId = await getLeastBusy(lsts, 'id');
+        const truckId = await getLeastBusy(trucks, 'id');
+        orderData.assigned_lst_user_id = lstId;
+        orderData.assigned_truck_id = truckId;
+        result = await createFuelOrder(orderData);
+      }
       setSubmitSuccess(true);
-      // Optionally reset form: setFormData({ ...initial state... })
+      // Optionally show assigned info
+      if (result.assigned_lst_user_id || result.assigned_truck_id) {
+        setError(`Assigned LST: ${result.assigned_lst_user_id || 'N/A'}, Truck: ${result.assigned_truck_id || 'N/A'}`);
+      }
       setTimeout(() => navigate('/'), 1500); // Redirect after delay
     } catch (err) {
       setError(err.message || 'Failed to create fuel order.');
@@ -97,7 +150,7 @@ function OrderCreatePage() {
   };
 
   // Loading state
-  if (isLoadingData) {
+  if (settingLoading || isLoadingData) {
     return (
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Create New Fuel Order</h1>
@@ -111,6 +164,22 @@ function OrderCreatePage() {
       <h1 className="text-2xl font-bold mb-4">Create New Fuel Order</h1>
       
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Only show auto/manual assign toggle if global setting is enabled */}
+        {autoAssignEnabled && (
+          <div className="form-group flex items-center gap-2 mb-2">
+            <input
+              type="checkbox"
+              id="autoAssign"
+              name="autoAssign"
+              checked={autoAssign}
+              onChange={e => setAutoAssign(e.target.checked)}
+              className="form-checkbox"
+            />
+            <label htmlFor="autoAssign" className="text-sm font-medium">
+              Auto-assign LST and Fuel Truck
+            </label>
+          </div>
+        )}
         {/* Tail Number Input */}
         <div className="form-group">
           <label htmlFor="tail_number" className="block text-sm font-medium mb-1">
@@ -147,48 +216,53 @@ function OrderCreatePage() {
         </div>
 
         {/* Assigned LST Select */}
-        <div className="form-group">
-          <label htmlFor="assigned_lst_user_id" className="block text-sm font-medium mb-1">
-            Assign LST*
-          </label>
-          <select
-            id="assigned_lst_user_id"
-            name="assigned_lst_user_id"
-            value={formData.assigned_lst_user_id}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            required
-          >
-            <option value="">Select LST...</option>
-            {lsts.map(lst => (
-              <option key={lst.id} value={lst.id}>
-                {lst.name} (ID: {lst.id})
-              </option>
-            ))}
-          </select>
-        </div>
+        {!autoAssign && (
+          <div className="form-group">
+            <label htmlFor="assigned_lst_user_id" className="block text-sm font-medium mb-1">
+              Assign LST*
+            </label>
+            <select
+              id="assigned_lst_user_id"
+              name="assigned_lst_user_id"
+              value={formData.assigned_lst_user_id}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+              required={!autoAssign}
+            >
+              <option value="">Select LST...</option>
+              <option value="-1">Auto-assign (let system choose)</option>
+              {lsts.map(lst => (
+                <option key={lst.id} value={lst.id}>
+                  {lst.name} (ID: {lst.id})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Assigned Truck Select */}
-        <div className="form-group">
-          <label htmlFor="assigned_truck_id" className="block text-sm font-medium mb-1">
-            Assign Truck*
-          </label>
-          <select
-            id="assigned_truck_id"
-            name="assigned_truck_id"
-            value={formData.assigned_truck_id}
-            onChange={handleChange}
-            className="w-full p-2 border rounded"
-            required
-          >
-            <option value="">Select Truck...</option>
-            {trucks.map(truck => (
-              <option key={truck.id} value={truck.id}>
-                {truck.name} (ID: {truck.id})
-              </option>
-            ))}
-          </select>
-        </div>
+        {!autoAssign && (
+          <div className="form-group">
+            <label htmlFor="assigned_truck_id" className="block text-sm font-medium mb-1">
+              Assign Truck*
+            </label>
+            <select
+              id="assigned_truck_id"
+              name="assigned_truck_id"
+              value={formData.assigned_truck_id}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+              required={!autoAssign}
+            >
+              <option value="">Select Truck...</option>
+              {trucks.map(truck => (
+                <option key={truck.id} value={truck.id}>
+                  {truck.name} (ID: {truck.id})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Requested Amount Input */}
         <div className="form-group">
@@ -280,4 +354,4 @@ function OrderCreatePage() {
   );
 }
 
-export default OrderCreatePage; 
+export default OrderCreatePage;

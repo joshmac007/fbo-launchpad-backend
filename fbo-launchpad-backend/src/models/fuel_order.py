@@ -1,7 +1,8 @@
 import enum
 from datetime import datetime
 from sqlalchemy import Integer, String, Boolean, DateTime, Enum, Text, Numeric, ForeignKey
-from src.app import db
+from sqlalchemy.ext.hybrid import hybrid_property
+from ..extensions import db
 
 class FuelOrderStatus(enum.Enum):
     DISPATCHED = 'Dispatched'
@@ -38,10 +39,10 @@ class FuelOrder(db.Model):
     # Metering Fields
     start_meter_reading = db.Column(db.Numeric(12, 2), nullable=True)
     end_meter_reading = db.Column(db.Numeric(12, 2), nullable=True)
-    calculated_gallons_dispensed = db.Column(db.Numeric(10, 2), nullable=True)
 
     # Timestamps
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     dispatch_timestamp = db.Column(db.DateTime, nullable=True)
     acknowledge_timestamp = db.Column(db.DateTime, nullable=True)
     en_route_timestamp = db.Column(db.DateTime, nullable=True)
@@ -60,6 +61,12 @@ class FuelOrder(db.Model):
     assigned_truck = db.relationship('FuelTruck', backref=db.backref('fuel_orders', lazy='dynamic'))
     reviewed_by_csr = db.relationship('User', foreign_keys=[reviewed_by_csr_user_id], 
                                     backref=db.backref('reviewed_fuel_orders', lazy='dynamic'))
+
+    @hybrid_property
+    def calculated_gallons_dispensed(self):
+        if self.start_meter_reading is not None and self.end_meter_reading is not None:
+            return float(self.end_meter_reading - self.start_meter_reading)
+        return None
 
     def __repr__(self):
         return f'<FuelOrder {self.id} - {self.tail_number}>' 

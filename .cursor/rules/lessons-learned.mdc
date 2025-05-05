@@ -1,0 +1,39 @@
+---
+description: 
+globs: lessons-learned.mdc
+alwaysApply: false
+---
+# Memory Bank Rules: Lessons-learned.mdc
+
+**File Purpose:** This file serves as a cumulative log of key insights, significant learnings, resolved misconceptions, and effective patterns discovered during the project lifecycle. It helps prevent repeating mistakes and reinforces successful approaches for all agents interacting with the project.
+
+**Cursor's Responsibility:**
+
+1.  **Identify Learnings:** During task execution or context review, actively identify situations where:
+    *   An initial assumption or approach was incorrect and needed correction (e.g., misunderstanding routing, state management issues).
+    *   A particularly effective solution or pattern was implemented.
+    *   A subtle requirement or constraint was discovered or clarified.
+    *   A significant refactoring occurred due to a previous design flaw.
+2.  **Record Concisely:** After completing a task where a notable learning occurred, add a new entry to this file.
+    *   Use a clear heading (e.g., date or related feature).
+    *   Briefly describe the initial situation or misconception.
+    *   Clearly state the resolution or the correct approach discovered.
+    *   Summarize the key takeaway or "lesson learned" in a reusable format.
+3.  **Categorize (Optional):** If the file grows large, consider adding categories (e.g., `# Backend`, `# Frontend`, `# Testing`, `# Architecture`).
+4.  **Reference Context:** When applicable, briefly mention related memory bank files or specific tasks for deeper context, but keep the entry self-contained enough to convey the core lesson.
+5.  **Review Regularly:** Briefly scan this file during the initial context review phase of a new task to benefit from past experiences.
+
+**Format:**
+
+*   Use Markdown for readability.
+*   Use headings, bullet points, and code formatting where appropriate.
+*   Prioritize clarity and conciseness.
+
+**Example Entry:**
+
+```markdown
+## Component Replacement Strategy (Frontend - 2024-03-26)
+
+*   **Misconception:** Attempted to add a new Dashboard component alongside the existing one during refactoring.
+*   **Resolution:** Realized a complete replacement of the old implementation within `DashboardPage.jsx` was necessary for clarity and to avoid conflicting logic.
+*   **Lesson Learned:** When replacing core functionality or components, prioritize a clean cutover rather than running old and new implementations in parallel. Ensure all references are updated. (See `activeContext.md` from that date for details).

@@ -1,9 +1,19 @@
 import logging
 from logging.config import fileConfig
+import os
 
 from flask import current_app
 
 from alembic import context
+
+# Import all models here for Alembic to detect them
+from src.models.user import User
+from src.models.role import Role
+from src.models.permission import Permission
+from src.models.aircraft import Aircraft
+from src.models.customer import Customer
+from src.models.fuel_truck import FuelTruck
+from src.models.fuel_order import FuelOrder
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -26,10 +36,10 @@ def get_engine():
 
 def get_engine_url():
     try:
-        return get_engine().url.render_as_string(hide_password=False).replace(
-            '%', '%%')
-    except AttributeError:
-        return str(get_engine().url).replace('%', '%%')
+        return current_app.config['SQLALCHEMY_DATABASE_URI']
+    except RuntimeError:
+        return os.environ.get('SQLALCHEMY_DATABASE_URI') or \
+            'postgresql://fbo_user:fbo_password@db:5432/fbo_launchpad_test'
 
 
 # add your model's MetaData object here
@@ -63,9 +73,12 @@ def run_migrations_offline():
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = get_engine_url()
     context.configure(
-        url=url, target_metadata=get_metadata(), literal_binds=True
+        url=url,
+        target_metadata=get_metadata(),
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
     )
 
     with context.begin_transaction():

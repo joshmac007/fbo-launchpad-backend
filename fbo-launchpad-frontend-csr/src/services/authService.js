@@ -1,8 +1,10 @@
-import apiService from './apiService';
+import apiService, { getApiUrl } from './apiService';
 
 export const loginUser = async (email, password) => {
+  // Always clear any old token before login
+  localStorage.removeItem('accessToken');
   try {
-    const response = await apiService.post('/auth/login', {
+    const response = await apiService.post(getApiUrl('/auth/login'), {
       email,
       password,
     });

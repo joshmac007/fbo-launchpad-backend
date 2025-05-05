@@ -29,4 +29,4 @@ COPY migrations/ migrations/
 EXPOSE 5000
 
 # Command to run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "src.app:app", "--workers", "4", "--reload"] 
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "src.app:create_app()", "--workers", "4", "--reload"] 

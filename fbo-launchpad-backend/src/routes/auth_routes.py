@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from ..services.auth_service import AuthService
+from flask_jwt_extended import create_access_token
 from ..schemas import (
     RegisterRequestSchema,
     RegisterResponseSchema,
@@ -7,9 +8,27 @@ from ..schemas import (
     LoginSuccessResponseSchema,
     ErrorResponseSchema
 )
+from ..models.user import User
+from ..models.role import Role
+from ..extensions import db, jwt
+from marshmallow import ValidationError
+from functools import wraps
+import time
+from datetime import datetime, timedelta
+import jwt as pyjwt
+from src.utils.rate_limiting import rate_limit
 
-# Create a Blueprint for authentication routes
-auth_bp = Blueprint('auth_bp', __name__, url_prefix='/api/auth')
+auth_bp = Blueprint('auth', __name__)
+
+# Rate limiting state
+login_attempts = {}
+RATE_LIMIT = 5  # attempts
+RATE_WINDOW = 300  # seconds (5 minutes)
+
+def reset_rate_limits():
+    """Reset rate limiting state (for testing)."""
+    global login_attempts
+    login_attempts = {}
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -39,64 +58,39 @@ def register():
           application/json:
             schema: ErrorResponseSchema
     """
-    data = request.get_json()
-    
-    # Basic input validation
-    if not data or not isinstance(data, dict):
-        return jsonify({"error": "Invalid request data"}), 400
-    
-    # Check for required fields
-    required_fields = ['name', 'email', 'password']
-    missing_fields = [field for field in required_fields if not data.get(field)]
-    
-    if missing_fields:
-        return jsonify({
-            "error": "Missing required fields",
-            "missing_fields": missing_fields
-        }), 400
-    
-    # Extract data
-    name = data['name']
-    email = data['email']
-    password = data['password']
-    
-    # Basic type validation
-    if not all(isinstance(data[field], str) for field in required_fields):
-        return jsonify({"error": "All fields must be strings"}), 400
-    
-    # Basic length validation
-    if len(name.strip()) < 2:
-        return jsonify({"error": "Name must be at least 2 characters long"}), 400
-    
-    if len(password) < 8:
-        return jsonify({"error": "Password must be at least 8 characters long"}), 400
-    
-    if '@' not in email or '.' not in email:
-        return jsonify({"error": "Invalid email format"}), 400
-    
-    # Call AuthService to register the user
-    new_user, message = AuthService.register_user(name=name, email=email, password=password)
-    
-    # Handle the registration result
-    if new_user is not None:
-        # Format user data for response, excluding sensitive information
-        user_data = {
-            "id": new_user.id,
-            "name": new_user.name,
-            "email": new_user.email,
-            "role": new_user.role.value,
-            "is_active": new_user.is_active,
-            "created_at": new_user.created_at.isoformat()
+    schema = RegisterRequestSchema()
+    try:
+        data = schema.load(request.json)
+    except:
+        return jsonify({'error': 'Invalid request data'}), 400
+
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify({'error': 'Email already registered'}), 409
+
+    user = User(
+        username=data['username'],
+        email=data['email'],
+        name=data['name'],
+        is_active=True
+    )
+    user.set_password(data['password'])
+
+    db.session.add(user)
+    db.session.commit()
+
+    return jsonify({
+        'message': 'User registered successfully',
+        'user': {
+            'id': user.id,
+            'email': user.email,
+            'name': user.name
         }
-        return jsonify({"message": message, "user": user_data}), 201
-    else:
-        # Handle registration failure
-        status_code = 409 if "Email already registered" in message else 400
-        return jsonify({"error": message}), status_code 
+    }), 201
 
 @auth_bp.route('/login', methods=['POST'])
+@rate_limit(limit=5, window=300)
 def login():
-    """Authenticate a user and return a JWT.
+    """Login endpoint that returns a JWT token on successful authentication
     ---
     tags:
       - Authentication
@@ -107,7 +101,7 @@ def login():
           schema: LoginRequestSchema
     responses:
       200:
-        description: Login successful, JWT returned
+        description: Login successful
         content:
           application/json:
             schema: LoginSuccessResponseSchema
@@ -117,51 +111,70 @@ def login():
           application/json:
             schema: ErrorResponseSchema
       401:
-        description: Unauthorized (e.g., invalid credentials, inactive user)
+        description: Unauthorized (e.g., invalid credentials)
         content:
           application/json:
             schema: ErrorResponseSchema
-      500:
-        description: Server error (e.g., token generation failed)
+      429:
+        description: Too Many Requests (rate limit exceeded)
         content:
           application/json:
             schema: ErrorResponseSchema
     """
-    data = request.get_json()
-    
-    # Basic input validation
-    if not data or not isinstance(data, dict):
-        return jsonify({"error": "Invalid request data"}), 400
-    
-    # Check for required fields
-    required_fields = ['email', 'password']
-    missing_fields = [field for field in required_fields if not data.get(field)]
-    
-    if missing_fields:
+    try:
+        # Validate request data
+        schema = LoginRequestSchema()
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({
+                'error': 'Missing required fields',
+                'details': 'Request body is empty'
+            }), 400
+            
+        try:
+            data = schema.load(data)
+        except ValidationError as err:
+            return jsonify({
+                'error': 'Missing required fields',
+                'details': err.messages
+            }), 400
+        
+        # Find user by email
+        user = User.query.filter_by(email=data['email']).first()
+        
+        if not user:
+            return jsonify({'error': 'Invalid email or password'}), 401
+            
+        if not user.is_active:
+            return jsonify({'error': 'User account is inactive'}), 401
+            
+        # Check password
+        if not user.check_password(data['password']):
+            return jsonify({'error': 'Invalid email or password'}), 401
+            
+        # Generate access token with user roles and status
+        access_token = create_access_token(
+            identity=user.id,
+            additional_claims={
+                'username': user.username,
+                'roles': [role.name for role in user.roles],
+                'is_active': user.is_active
+            }
+        )
+        
+        # Generate response
+        response_schema = LoginSuccessResponseSchema()
+        return response_schema.dump({
+            'user': user.to_dict(),
+            'token': access_token
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        print(f"[LOGIN ERROR] {str(e)}\nTraceback:\n{tb}")
         return jsonify({
-            "error": "Missing required fields",
-            "missing_fields": missing_fields
-        }), 400
-    
-    # Extract data
-    email = data['email']
-    password = data['password']
-    
-    # Basic type validation
-    if not all(isinstance(data[field], str) for field in required_fields):
-        return jsonify({"error": "All fields must be strings"}), 400
-    
-    # Basic email format validation
-    if '@' not in email or '.' not in email:
-        return jsonify({"error": "Invalid email format"}), 400
-    
-    # Call AuthService to authenticate the user and get JWT token
-    token, message = AuthService.login_user(email=email, password=password)
-    
-    # Handle the login result
-    if token is not None:
-        return jsonify({"access_token": token}), 200
-    else:
-        # Determine appropriate status code based on error message
-        status_code = 500 if "Server configuration error" in message or "Error generating token" in message else 401
-        return jsonify({"error": message}), status_code 
+            'error': 'Internal server error',
+            'details': str(e)
+        }), 500 
