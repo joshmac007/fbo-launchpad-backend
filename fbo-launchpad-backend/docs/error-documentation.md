@@ -197,6 +197,19 @@ class RegisterRequestSchema(Schema):
 
 **Note**: The `/api/admin/assignment-settings` endpoint is deprecated and has been removed as of April 2025. Any frontend code attempting to access this endpoint should be updated.
 
----
+## 6. CORS Preflight 404 Error (May 2025)
+**Symptoms:**
+- OPTIONS (CORS preflight) requests to backend endpoints returned 404 Not Found, despite Flask-CORS being configured.
+
+**Cause:**
+- Manual @app.before_request handler for OPTIONS requests conflicted with Flask-CORS extension.
+- Inconsistent use of trailing slashes in blueprint url_prefix values.
+
+**Resolution (2025-05-15):**
+1. Removed the manual @app.before_request OPTIONS handler from src/app.py. Now rely solely on Flask-CORS for preflight handling.
+2. Standardized all app.register_blueprint(..., url_prefix=...) calls in src/app.py to omit trailing slashes, ensuring consistent route registration and correct CORS behavior.
+
+**Action:**
+- After this change, restart the backend and clear browser cache before re-testing frontend form submissions.
 
 *Document last updated: YYYY-MM-DD*

@@ -6,6 +6,9 @@
 - Static role columns/enums removed from User model
 - Marshmallow validation and serialization
 - Consistent error handling and OpenAPI documentation
+- **New:** Dedicated database seeding script (`src/seeds.py`) and CLI command (`flask seed run`) for PBAC initial data and admin user creation.
+- **Update (2025-05-14):** Permission names and role mappings in `src/seeds.py` were corrected to match the finalized PBAC list of 21 permissions. This ensures all seeded data is consistent with the system's authorization model and prevents downstream errors.
+- **Fix (2025-05-15):** Resolved persistent CORS preflight (OPTIONS 404) error by removing the manual @app.before_request OPTIONS handler from src/app.py and standardizing all blueprint url_prefix values to omit trailing slashes. Backend now relies solely on Flask-CORS for preflight handling. After this change, restart the backend and clear browser cache before re-testing frontend form submissions.
 
 ## Entities & Endpoints
 - **Users**: Full CRUD, soft delete, activation, role enforcement
@@ -29,7 +32,7 @@
 
 ## Status Update
 - Admin CRUD API endpoints for Aircraft and Customers are now implemented, documented, and available for frontend integration/testing.
-- PBAC migration script updated: Permission, Role, user_roles, role_permissions tables created, User.role column removed. **Permissions table is now seeded with 21 finalized permissions via bulk_insert in upgrade; downgrade removes these records before dropping the table.** Migration script inspected and verified for correctness (upgrade/downgrade, data seeding).
+- PBAC migration script updated: Permission, Role, user_roles, role_permissions tables created, User.role column removed. **Permissions table is now seeded with 21 finalized permissions via bulk_insert in upgrade; downgrade removes these records before dropping the table. Migration script inspected and verified for correctness (upgrade/downgrade, data seeding).**
 - **Step 5 complete:** Migration now also seeds default roles (System Administrator, Customer Service Representative, Line Service Technician) and assigns the correct permissions to each via the role_permissions table. This ensures baseline access for user migration in the next step. Migration script reviewed for correctness and reversibility.
 - **Step 6 complete:** Migration script now migrates all existing users to the new default roles based on their previous role assignment. Old users.role values are mapped to new role names and inserted into user_roles. Downgrade deletes all user_roles links before dropping the table. This preserves user access during PBAC transition.
 - **Step 7 complete (2025-05-04):** Alembic migration script applied successfully using `flask db upgrade`. All schema changes (permissions, roles, role_permissions, user_roles tables) and data seeding/migration logic executed without error. Users migrated to new user_roles table, old users.role column removed. Migration ordering and session/table definition issues encountered and resolved (see error documentation). **PBAC Phase 1 is now complete.**
@@ -42,6 +45,9 @@
 - **Step 14 complete (2025-05-11):** Implemented Flask route handler in `src/routes/admin/permission_admin_routes.py` for listing all available system Permissions. Created `PermissionListResponseSchema` for consistent response serialization, secured endpoint with `@require_permission('VIEW_PERMISSIONS')`, connected to `PermissionService.get_all_permissions()` method, and added OpenAPI documentation. Ready for frontend integration via APIDog swagger.json import.
 - **Step 15 complete (2025-05-12):** Refactored `UserService` class to fully support PBAC's many-to-many relationship between Users and Roles. All methods (`create_user`, `update_user`, `get_users`, `get_user_by_id`) now handle role_ids lists, validate role existence, and use SQLAlchemy's eager loading to prevent N+1 queries. The old UserRole enum has been completely removed, and proper error messages are in place for invalid role assignments. This completes the service-layer updates for PBAC Phase 3.
 - **Step 16 complete (2025-05-13):** Implemented complete Admin User Management API route handlers in `src/routes/admin/user_admin_routes.py`. Created/updated user schemas to handle role_ids list and proper response serialization. All endpoints (`GET /`, `POST /`, `GET /<id>`, `PATCH /<id>`, `DELETE /<id>`) are secured with appropriate permissions (`VIEW_USERS` or `MANAGE_USERS`). Blueprint registered in `src/app.py` with proper URL prefix and OpenAPI documentation. Ready for frontend integration via APIDog swagger.json import.
+- **New (2025-05-14):** Added `src/seeds.py` and CLI command `flask seed run` to seed PBAC data and default admin user after DB reset. Script is idempotent and replaces previous migration-based seeding logic.
+- **Update (2025-05-14):** Permission names and role mappings in `src/seeds.py` were corrected to match the finalized PBAC list of 21 permissions. This ensures all seeded data is consistent with the system's authorization model and prevents downstream errors.
+- **Fix (2025-05-15):** Resolved persistent CORS preflight (OPTIONS 404) error by removing the manual @app.before_request OPTIONS handler from src/app.py and standardizing all blueprint url_prefix values to omit trailing slashes. Backend now relies solely on Flask-CORS for preflight handling. After this change, restart the backend and clear browser cache before re-testing frontend form submissions.
 
 ## Next Steps
 - Add pagination/search to list endpoints

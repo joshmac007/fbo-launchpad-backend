@@ -12,7 +12,7 @@ export default function AssignmentSettingsPage() {
       setLoading(true);
       setError('');
       try {
-        const res = await apiService.get('/api/admin/assignment-settings');
+        const res = await apiService.get('/admin/assignment-settings');
         setAutoAssignEnabled(res.data.auto_assign_enabled);
       } catch (err) {
         setError('Failed to fetch assignment setting.');
@@ -29,7 +29,7 @@ export default function AssignmentSettingsPage() {
     setError('');
     setSuccess('');
     try {
-      await apiService.post('/api/admin/assignment-settings', { auto_assign_enabled: value });
+      await apiService.post('/admin/assignment-settings', { auto_assign_enabled: value });
       setSuccess('Setting updated successfully.');
     } catch (err) {
       setError('Failed to update setting.');

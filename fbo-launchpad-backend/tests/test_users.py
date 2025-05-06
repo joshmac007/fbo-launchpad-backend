@@ -8,11 +8,11 @@ from src.models.role import Role
 def test_get_users_list(client, auth_headers, test_users):
     """Test GET /api/users endpoint."""
     # Test unauthorized access
-    response = client.get('/api/users')
+    response = client.get('/api/users/')
     assert response.status_code == 401
 
     # Test access with CSR role (should have VIEW_USERS permission)
-    response = client.get('/api/users', headers=auth_headers['csr'])
+    response = client.get('/api/users/', headers=auth_headers['csr'])
     assert response.status_code == 200
     data = json.loads(response.data)
     assert isinstance(data['users'], list)
@@ -25,11 +25,11 @@ def test_get_users_list(client, auth_headers, test_users):
         assert isinstance(user['roles'], list)
 
     # Test access with LST role (should have VIEW_USERS permission)
-    response = client.get('/api/users', headers=auth_headers['lst'])
+    response = client.get('/api/users/', headers=auth_headers['lst'])
     assert response.status_code == 200
 
     # Test access with admin role
-    response = client.get('/api/users', headers=auth_headers['admin'])
+    response = client.get('/api/users/', headers=auth_headers['admin'])
     assert response.status_code == 200
     data = json.loads(response.data)
     assert isinstance(data['users'], list)
@@ -75,19 +75,19 @@ def test_create_user(client, auth_headers, test_roles):
     }
 
     # Test unauthorized access
-    response = client.post('/api/admin/users', json=new_user_data)
+    response = client.post('/api/admin/users/', json=new_user_data)
     assert response.status_code == 401
 
     # Test access with CSR role (should not have MANAGE_USERS permission)
-    response = client.post('/api/admin/users', json=new_user_data, headers=auth_headers['csr'])
+    response = client.post('/api/admin/users/', json=new_user_data, headers=auth_headers['csr'])
     assert response.status_code == 403
 
     # Test access with LST role (should not have MANAGE_USERS permission)
-    response = client.post('/api/admin/users', json=new_user_data, headers=auth_headers['lst'])
+    response = client.post('/api/admin/users/', json=new_user_data, headers=auth_headers['lst'])
     assert response.status_code == 403
 
     # Test successful creation with admin role
-    response = client.post('/api/admin/users', json=new_user_data, headers=auth_headers['admin'])
+    response = client.post('/api/admin/users/', json=new_user_data, headers=auth_headers['admin'])
     assert response.status_code == 201
     data = json.loads(response.data)
     assert data['email'] == new_user_data['email']
@@ -103,7 +103,7 @@ def test_create_user(client, auth_headers, test_roles):
     assert user.roles[0].name == 'Customer Service Representative'
 
     # Test duplicate email
-    response = client.post('/api/admin/users', json=new_user_data, headers=auth_headers['admin'])
+    response = client.post('/api/admin/users/', json=new_user_data, headers=auth_headers['admin'])
     assert response.status_code == 409
 
 def test_update_user(client, auth_headers, test_users, test_roles):
@@ -116,15 +116,15 @@ def test_update_user(client, auth_headers, test_users, test_roles):
     }
 
     # Test unauthorized access
-    response = client.put(f'/api/admin/users/{user_id}', json=update_data)
+    response = client.put(f'/api/admin/users/{user_id}')
     assert response.status_code == 401
 
     # Test access with CSR role (should not have MANAGE_USERS permission)
-    response = client.put(f'/api/admin/users/{user_id}', json=update_data, headers=auth_headers['csr'])
+    response = client.put(f'/api/admin/users/{user_id}', headers=auth_headers['csr'])
     assert response.status_code == 403
 
     # Test access with LST role (should not have MANAGE_USERS permission)
-    response = client.put(f'/api/admin/users/{user_id}', json=update_data, headers=auth_headers['lst'])
+    response = client.put(f'/api/admin/users/{user_id}', headers=auth_headers['lst'])
     assert response.status_code == 403
 
     # Test successful update with admin role

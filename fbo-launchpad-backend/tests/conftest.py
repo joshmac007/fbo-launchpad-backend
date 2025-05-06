@@ -2,7 +2,7 @@ import os
 import pytest
 import jwt
 from datetime import datetime, timedelta
-from src import create_app
+from src import create_app, config as app_config
 from src.models.user import User
 from src.models.role import Role
 from src.models.permission import Permission
@@ -11,6 +11,14 @@ from src.models.customer import Customer
 from src.models.fuel_truck import FuelTruck
 from src.models.fuel_order import FuelOrder
 from src.extensions import db as _db
+
+# Patch: Use SQLite in-memory DB for local testing if LOCAL_TEST=1
+if os.environ.get('LOCAL_TEST') == '1':
+    from src.config import TestingConfig, config as app_config_dict
+    class LocalTestConfig(TestingConfig):
+        SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    app_config_dict['testing'] = LocalTestConfig
+    print('*** Forcing SQLite in-memory DB for all test runs (LOCAL_TEST=1) ***')
 
 @pytest.fixture(scope='session')
 def app():
@@ -46,30 +54,10 @@ def db(app):
 @pytest.fixture(scope='function')
 def db_session(app, db):
     """Create a new database session for a test."""
-    connection = db.engine.connect()
-    transaction = connection.begin()
-    
-    # Create a session bound to the connection
-    session = db.create_scoped_session(
-        options={"bind": connection, "binds": {}}
-    )
-    
-    # Begin a nested transaction (savepoint)
-    session.begin_nested()
-    
-    # If the session fails to commit, the transaction is rolled back
-    @session.event.listens_for(session, 'after_transaction_end')
-    def restart_savepoint(session, transaction):
-        if transaction.nested and not transaction._parent.nested:
-            # Start a new nested transaction after the previous one ends
-            session.begin_nested()
-    
+    session = db.session
     yield session
-    
-    # Rollback everything
-    session.close()
-    transaction.rollback()
-    connection.close()
+    session.rollback()
+    session.remove()
 
 @pytest.fixture(scope='function')
 def client(app):
@@ -95,30 +83,29 @@ def test_permissions(app, db):
         for p in permissions:
             db.session.add(p)
         db.session.commit()
-        return permissions
 
 @pytest.fixture(scope='session')
 def test_roles(app, db, test_permissions):
     """Create test roles."""
     with app.app_context():
+        # Query permissions from the database to ensure they are attached to the session
+        all_permissions = Permission.query.all()
+        perm_dict = {p.name: p for p in all_permissions}
         # Admin role gets all permissions
         admin_role = Role(name='Administrator', description='Full system access')
-        admin_role.permissions.extend(test_permissions)
-        
+        admin_role.permissions.extend(all_permissions)
         # CSR role gets customer service permissions
         csr_role = Role(name='Customer Service Representative', description='Customer service access')
-        csr_permissions = [p for p in test_permissions if p.name in [
+        csr_permissions = [perm_dict[n] for n in [
             'CREATE_ORDER', 'MANAGE_ORDERS', 'VIEW_ORDERS', 'VIEW_USERS'
-        ]]
+        ] if n in perm_dict]
         csr_role.permissions.extend(csr_permissions)
-        
         # LST role gets limited permissions
         lst_role = Role(name='Line Service Technician', description='Line service access')
-        lst_permissions = [p for p in test_permissions if p.name in [
+        lst_permissions = [perm_dict[n] for n in [
             'VIEW_ORDERS', 'COMPLETE_ORDER', 'VIEW_TRUCKS'
-        ]]
+        ] if n in perm_dict]
         lst_role.permissions.extend(lst_permissions)
-        
         roles = [admin_role, csr_role, lst_role]
         for role in roles:
             db.session.add(role)
@@ -132,7 +119,6 @@ def test_users(app, db, test_roles):
         admin_role = Role.query.filter_by(name='Administrator').first()
         csr_role = Role.query.filter_by(name='Customer Service Representative').first()
         lst_role = Role.query.filter_by(name='Line Service Technician').first()
-        
         admin_user = User(
             username='admin',
             email='admin@test.com',
@@ -141,7 +127,6 @@ def test_users(app, db, test_roles):
         )
         admin_user.set_password('adminpass')
         admin_user.roles.append(admin_role)
-        
         csr_user = User(
             username='csr',
             email='csr@test.com',
@@ -150,7 +135,6 @@ def test_users(app, db, test_roles):
         )
         csr_user.set_password('csrpass')
         csr_user.roles.append(csr_role)
-        
         lst_user = User(
             username='lst',
             email='lst@test.com',
@@ -159,7 +143,6 @@ def test_users(app, db, test_roles):
         )
         lst_user.set_password('lstpass')
         lst_user.roles.append(lst_role)
-        
         inactive_user = User(
             username='inactive',
             email='inactive@test.com',
@@ -168,50 +151,49 @@ def test_users(app, db, test_roles):
         )
         inactive_user.set_password('inactivepass')
         inactive_user.roles.append(lst_role)
-        
         users = [admin_user, csr_user, lst_user, inactive_user]
         for user in users:
             db.session.add(user)
         db.session.commit()
-        return users
+        # Do not return the list
 
 @pytest.fixture(scope='session')
-def test_admin_user(test_users):
-    """Get the admin test user."""
-    return test_users[0]  # First user is admin
+def test_admin_user(app, test_users):
+    with app.app_context():
+        return User.query.filter_by(username='admin').first()
 
 @pytest.fixture(scope='session')
-def test_csr_user(test_users):
-    """Get the CSR test user."""
-    return test_users[1]  # Second user is CSR
+def test_csr_user(app, test_users):
+    with app.app_context():
+        return User.query.filter_by(username='csr').first()
 
 @pytest.fixture(scope='session')
-def test_lst_user(test_users):
-    """Get the LST test user."""
-    return test_users[2]  # Third user is LST
+def test_lst_user(app, test_users):
+    with app.app_context():
+        return User.query.filter_by(username='lst').first()
 
 @pytest.fixture(scope='session')
-def test_inactive_user(test_users):
-    """Get the inactive test user."""
-    return test_users[3]  # Fourth user is inactive
+def test_inactive_user(app, test_users):
+    with app.app_context():
+        return User.query.filter_by(username='inactive').first()
 
 @pytest.fixture(scope='session')
 def auth_headers(app, test_users):
-    """Generate authentication headers for test users."""
     headers = {}
     with app.app_context():
-        for user in test_users:
-            if user.is_active:  # Only generate tokens for active users
+        users = User.query.all()
+        for user in users:
+            if user.is_active:
                 token = jwt.encode(
                     {
-                        'sub': user.id,  # Changed from user_id to sub for standard JWT claims
+                        'sub': str(user.id),
                         'exp': datetime.utcnow() + timedelta(days=1),
                         'iat': datetime.utcnow()
                     },
                     app.config['JWT_SECRET_KEY'],
                     algorithm='HS256'
                 )
-                role_key = user.roles[0].name.lower().split()[0]  # Get first word of role name in lowercase
+                role_key = user.roles[0].name.lower().split()[0]
                 headers[role_key] = {'Authorization': f'Bearer {token}'}
     return headers
 
@@ -233,8 +215,7 @@ def test_aircraft(db, test_customer):
     aircraft = Aircraft(
         tail_number='N12345',
         aircraft_type='Jet',
-        fuel_type='Jet-A',
-        customer_id=test_customer.id
+        fuel_type='Jet-A'
     )
     db.session.add(aircraft)
     db.session.commit()
@@ -247,7 +228,7 @@ def test_fuel_truck(db):
         truck_number='FT001',
         fuel_type='Jet-A',
         capacity=5000.0,
-        current_fuel_level=5000.0,
+        current_meter_reading=0.0,
         is_active=True
     )
     db.session.add(truck)

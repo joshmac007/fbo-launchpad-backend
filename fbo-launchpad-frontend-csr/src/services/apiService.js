@@ -1,22 +1,7 @@
 import axios from 'axios';
 
-// Helper function to build the correct API path
-// Only add '/api' for endpoints that require it (like users and trucks)
-// Do NOT add '/api' for endpoints like fuel-orders
-export function getApiUrl(endpoint) {
-  // Remove leading slash for consistency
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-  // Endpoints that need '/api' prefix
-  const apiPrefixed = ['users', 'fuel-trucks', 'auth'];
-  if (apiPrefixed.some(prefix => cleanEndpoint.startsWith(prefix))) {
-    return `/api/${cleanEndpoint}`;
-  }
-  // All others (like 'fuel-orders') do NOT get '/api' prefix
-  return `/${cleanEndpoint}`;
-}
-
 const apiService = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

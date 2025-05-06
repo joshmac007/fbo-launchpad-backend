@@ -81,3 +81,11 @@ existing_role = Role.query.filter(
 if existing_role:
     return None, f"Role with name '{data['name']}' already exists", 409
 ```
+
+# PBAC Seeding
+
+- As of 2025-05-14, a dedicated seeding script (`src/seeds.py`) and CLI command (`flask seed run`) must be used after a database reset to populate permissions, roles, role-permission assignments, and a default admin user.
+- The script is idempotent and can be safely re-run.
+- This replaces the previous migration-based seeding logic for PBAC initial data.
+- Failure to run the seeding script after a reset will result in missing PBAC data and inability to log in as admin.
+- **Update (2025-05-14):** Permission names and role mappings in `src/seeds.py` were corrected to match the finalized PBAC list of 21 permissions. This ensures all seeded data is consistent with the system's authorization model and prevents downstream errors.

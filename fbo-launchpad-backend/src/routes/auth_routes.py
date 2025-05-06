@@ -155,7 +155,7 @@ def login():
             
         # Generate access token with user roles and status
         access_token = create_access_token(
-            identity=user.id,
+            identity=str(user.id),
             additional_claims={
                 'username': user.username,
                 'roles': [role.name for role in user.roles],

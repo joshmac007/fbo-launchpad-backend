@@ -3,7 +3,7 @@ import apiService from './apiService';
 class PermissionService {
   async getPermissions() {
     try {
-      const response = await apiService.get('/api/admin/permissions');
+      const response = await apiService.get('/admin/permissions');
       return response.data;
     } catch (error) {
       throw error;

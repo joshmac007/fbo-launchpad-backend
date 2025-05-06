@@ -3,7 +3,7 @@ import apiService from './apiService';
 class RoleService {
   async getRoles() {
     try {
-      const response = await apiService.get('/api/admin/roles');
+      const response = await apiService.get('/admin/roles');
       return response.data;
     } catch (error) {
       throw error;
@@ -12,7 +12,7 @@ class RoleService {
 
   async createRole(data) {
     try {
-      const response = await apiService.post('/api/admin/roles', data);
+      const response = await apiService.post('/admin/roles', data);
       return response.data;
     } catch (error) {
       throw error;
@@ -21,7 +21,7 @@ class RoleService {
 
   async getRoleById(id) {
     try {
-      const response = await apiService.get(`/api/admin/roles/${id}`);
+      const response = await apiService.get(`/admin/roles/${id}`);
       return response.data;
     } catch (error) {
       throw error;
@@ -30,7 +30,7 @@ class RoleService {
 
   async updateRole(id, data) {
     try {
-      const response = await apiService.put(`/api/admin/roles/${id}`, data);
+      const response = await apiService.put(`/admin/roles/${id}`, data);
       return response.data;
     } catch (error) {
       throw error;
@@ -39,7 +39,7 @@ class RoleService {
 
   async deleteRole(id) {
     try {
-      const response = await apiService.delete(`/api/admin/roles/${id}`);
+      const response = await apiService.delete(`/admin/roles/${id}`);
       return response.data;
     } catch (error) {
       throw error;
@@ -48,7 +48,7 @@ class RoleService {
 
   async getRolePermissions(id) {
     try {
-      const response = await apiService.get(`/api/admin/roles/${id}/permissions`);
+      const response = await apiService.get(`/admin/roles/${id}/permissions`);
       return response.data;
     } catch (error) {
       throw error;
@@ -57,7 +57,7 @@ class RoleService {
 
   async assignPermissionToRole(roleId, permissionId) {
     try {
-      const response = await apiService.post(`/api/admin/roles/${roleId}/permissions/${permissionId}`);
+      const response = await apiService.post(`/admin/roles/${roleId}/permissions/${permissionId}`);
       return response.data;
     } catch (error) {
       throw error;
@@ -66,7 +66,7 @@ class RoleService {
 
   async removePermissionFromRole(roleId, permissionId) {
     try {
-      const response = await apiService.delete(`/api/admin/roles/${roleId}/permissions/${permissionId}`);
+      const response = await apiService.delete(`/admin/roles/${roleId}/permissions/${permissionId}`);
       return response.data;
     } catch (error) {
       throw error;

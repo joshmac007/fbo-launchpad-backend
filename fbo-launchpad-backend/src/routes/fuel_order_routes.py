@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, g, Response
+from flask import Blueprint, request, jsonify, g, Response, current_app
 from decimal import Decimal
 from datetime import datetime
 from ..utils.decorators import token_required, require_permission
@@ -52,9 +52,9 @@ def get_status_counts():
 @token_required
 @require_permission('CREATE_ORDER')
 def create_fuel_order():
+    current_app.logger.info(f"--- Entered create_fuel_order function. Request Method: {request.method} ---")
     import logging
     logger = logging.getLogger(__name__)
-    from flask import current_app
     logger.info('[DEBUG] JWT_SECRET_KEY in create_fuel_order: %s', current_app.config.get('JWT_SECRET_KEY'))
     logger.info('[DEBUG] JWT_ALGORITHM in create_fuel_order: %s', current_app.config.get('JWT_ALGORITHM', 'HS256'))
     logger.info('Entered create_fuel_order')
@@ -113,7 +113,6 @@ def create_fuel_order():
         'requested_amount': float,
         'location_on_ramp': str
     }
-    
     for field, field_type in required_fields.items():
         if field not in data:
             logger.error('Step 2.1: Missing required field: %s', field)
@@ -127,6 +126,9 @@ def create_fuel_order():
         else:
             if not isinstance(data[field], field_type):
                 return jsonify({"error": f"Invalid type for field: {field}"}), 400
+
+    # Only run auto-assignment if assigned_lst_user_id == -1
+    if data['assigned_lst_user_id'] == -1:
         try:
             from src.services.user_service import UserService
             from src.models.user import UserRole
@@ -136,7 +138,6 @@ def create_fuel_order():
                 logger.error('No active LST users found for auto-assignment')
                 return jsonify({"error": "No active LST users available for auto-assignment"}), 400
             # Find the LST with the fewest active/in-progress orders
-            from src.models.fuel_order import FuelOrderStatus, FuelOrder
             least_busy = None
             min_orders = None
             for lst in lst_users:
@@ -204,18 +205,21 @@ def create_fuel_order():
         db.session.commit()
         logger.info('Step 7: FuelOrder committed')
         return jsonify({
-            'id': fuel_order.id,
-            'tail_number': fuel_order.tail_number,
-            'customer_id': fuel_order.customer_id,
-            'fuel_type': fuel_order.fuel_type,
-            'additive_requested': fuel_order.additive_requested,
-            'requested_amount': fuel_order.requested_amount,
-            'assigned_lst_user_id': fuel_order.assigned_lst_user_id,
-            'assigned_truck_id': fuel_order.assigned_truck_id,
-            'location_on_ramp': fuel_order.location_on_ramp,
-            'csr_notes': fuel_order.csr_notes,
-            'status': fuel_order.status.value,
-            'created_at': fuel_order.created_at.isoformat()
+            'message': 'Fuel order created successfully',
+            'fuel_order': {
+                'id': fuel_order.id,
+                'tail_number': fuel_order.tail_number,
+                'customer_id': fuel_order.customer_id,
+                'fuel_type': fuel_order.fuel_type,
+                'additive_requested': fuel_order.additive_requested,
+                'requested_amount': str(fuel_order.requested_amount) if fuel_order.requested_amount else None,
+                'assigned_lst_user_id': fuel_order.assigned_lst_user_id,
+                'assigned_truck_id': fuel_order.assigned_truck_id,
+                'location_on_ramp': fuel_order.location_on_ramp,
+                'csr_notes': fuel_order.csr_notes,
+                'status': fuel_order.status.value,
+                'created_at': fuel_order.created_at.isoformat()
+            }
         }), 201
     except Exception as e:
         db.session.rollback()

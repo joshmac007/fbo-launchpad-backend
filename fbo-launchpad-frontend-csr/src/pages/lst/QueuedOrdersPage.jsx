@@ -13,7 +13,7 @@ export default function QueuedOrdersPage() {
       setLoading(true);
       setError('');
       try {
-        const res = await apiService.get('/api/orders/unassigned');
+        const res = await apiService.get('/orders/unassigned');
         setOrders(res.data.orders || []);
       } catch (err) {
         setError('Failed to fetch queued orders.');
@@ -29,7 +29,7 @@ export default function QueuedOrdersPage() {
     setError('');
     setSuccess('');
     try {
-      await apiService.post(`/api/orders/${orderId}/accept`);
+      await apiService.post(`/orders/${orderId}/accept`);
       setOrders(orders.filter(o => o.id !== orderId));
       setSuccess('Order accepted!');
     } catch (err) {

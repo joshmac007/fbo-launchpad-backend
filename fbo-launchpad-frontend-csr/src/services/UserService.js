@@ -1,8 +1,8 @@
-import apiService, { getApiUrl } from './apiService';
+import apiService from './apiService';
 
 export const getUsers = async (params = {}) => {
   try {
-    const response = await apiService.get(getApiUrl('/users/'), { params });
+    const response = await apiService.get('/users', { params });
     return response.data.users || [];
   } catch (error) {
     console.error("Error fetching users:", error.response?.data || error.message);
@@ -13,7 +13,7 @@ export const getUsers = async (params = {}) => {
 export const createUser = async (userData) => {
   // userData: {name, email, password, role_ids, is_active}
   try {
-    const response = await apiService.post(getApiUrl('/users/'), userData);
+    const response = await apiService.post('/users', userData);
     return response.data;
   } catch (error) {
     console.error('Error creating user:', error.response?.data || error.message);
@@ -23,7 +23,7 @@ export const createUser = async (userData) => {
 
 export const getUserById = async (userId) => {
   try {
-    const response = await apiService.get(getApiUrl(`/users/${userId}`));
+    const response = await apiService.get(`/users/${userId}`);
     return response.data.user;
   } catch (error) {
     console.error('Error fetching user:', error.response?.data || error.message);
@@ -34,7 +34,7 @@ export const getUserById = async (userId) => {
 export const updateUser = async (userId, updateData) => {
   // updateData: {name, email, role_ids, is_active} (no password)
   try {
-    const response = await apiService.patch(getApiUrl(`/users/${userId}`), updateData);
+    const response = await apiService.patch(`/users/${userId}`, updateData);
     return response.data;
   } catch (error) {
     console.error('Error updating user:', error.response?.data || error.message);
@@ -44,7 +44,7 @@ export const updateUser = async (userId, updateData) => {
 
 export const deleteUser = async (userId) => {
   try {
-    const response = await apiService.delete(getApiUrl(`/users/${userId}`));
+    const response = await apiService.delete(`/users/${userId}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting user:', error.response?.data || error.message);

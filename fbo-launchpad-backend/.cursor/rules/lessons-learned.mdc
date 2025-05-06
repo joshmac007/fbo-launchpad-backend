@@ -99,3 +99,5 @@ alwaysApply: false
    - Then update route handlers
    - Finally update frontend integration
    - Test thoroughly at each stage
+
+Auto-assignment logic for LST in create_fuel_order must only run if assigned_lst_user_id == -1. Placing this logic inside the required fields loop causes it to run for every field, breaking explicit assignment. Always guard auto-assignment logic with an explicit check.

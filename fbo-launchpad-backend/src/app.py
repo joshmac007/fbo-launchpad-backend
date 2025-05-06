@@ -3,6 +3,7 @@ from flask import Flask, jsonify, current_app, request
 from flask_cors import CORS
 from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_webframeworks.flask import FlaskPlugin
+import logging
 
 from src.config import config
 from src.extensions import db, migrate, jwt, apispec, marshmallow_plugin
@@ -63,18 +64,6 @@ def create_app(config_name=None):
         }
     )
 
-    # Add before_request handler for OPTIONS requests
-    @app.before_request
-    def handle_preflight():
-        if request.method == "OPTIONS":
-            response = app.make_default_options_response()
-            # Ensure CORS headers are added
-            response.headers.add('Access-Control-Allow-Origin', '*')
-            response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,Access-Control-Request-Method,Access-Control-Request-Headers')
-            response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
-            response.headers.add('Access-Control-Max-Age', '3600')
-            return response
-
     # Load config
     app.config.from_object(config[config_name])
 
@@ -112,12 +101,27 @@ def create_app(config_name=None):
 
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(fuel_order_bp, url_prefix='/api/fuel-orders/')
-    app.register_blueprint(user_bp, url_prefix='/api/users/')
-    app.register_blueprint(truck_bp, url_prefix='/api/fuel-trucks/')
-    app.register_blueprint(aircraft_bp, url_prefix='/api/aircraft/')
-    app.register_blueprint(customer_bp, url_prefix='/api/customers/')
-    app.register_blueprint(admin_bp, url_prefix='/api/admin/')
+    app.register_blueprint(fuel_order_bp, url_prefix='/api/fuel-orders', strict_slashes=False)
+    app.register_blueprint(user_bp, url_prefix='/api/users')
+    app.register_blueprint(truck_bp, url_prefix='/api/fuel-trucks')
+    app.register_blueprint(aircraft_bp, url_prefix='/api/aircraft')
+    app.register_blueprint(customer_bp, url_prefix='/api/customers')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
+
+    # --- TEMPORARY DEBUGGING CODE ---
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO) # Ensure INFO level is captured
+    logger.info("--- Registered URL Rules (Fuel Order Focus) ---")
+    rules_found = False
+    for rule in app.url_map.iter_rules():
+        # Filter specifically for the fuel order endpoint
+        if rule.endpoint == 'fuel_order_bp.create_fuel_order' or rule.rule == '/api/fuel-orders' or rule.rule == '/api/fuel-orders/':
+            logger.info(f"Rule: {rule.rule}, Endpoint: {rule.endpoint}, Methods: {list(rule.methods)}")
+            rules_found = True
+    if not rules_found:
+        logger.info("No specific rules found for fuel order creation endpoint.")
+    logger.info("--- End of URL Rules ---")
+    # --- END TEMPORARY DEBUGGING CODE ---
 
     # Register schemas and paths with apispec
     with app.app_context():
@@ -298,6 +302,10 @@ def create_app(config_name=None):
     def create_swagger_spec():
         """Serve the swagger specification."""
         return jsonify(app.spec.to_dict())
+
+    @app.route('/api/cors-test', methods=['OPTIONS', 'POST'])
+    def cors_test():
+        return jsonify({"message": "CORS test"}), 200
 
     return app
 

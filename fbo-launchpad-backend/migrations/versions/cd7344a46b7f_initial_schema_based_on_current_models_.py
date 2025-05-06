@@ -1,8 +1,8 @@
-"""Initial migration
+"""Initial schema based on current models including PBAC and user name column
 
-Revision ID: 87256ef2abc1
-Revises: 05eadf8716a5
-Create Date: 2025-04-30 18:28:24.451898
+Revision ID: cd7344a46b7f
+Revises: 
+Create Date: 2025-05-04 23:03:17.714843
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '87256ef2abc1'
-down_revision = '05eadf8716a5'
+revision = 'cd7344a46b7f'
+down_revision = None
 branch_labels = None
 depends_on = None
 

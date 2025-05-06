@@ -9,6 +9,9 @@
 - Customer CRUD endpoints
 - OpenAPI/Swagger documentation for all endpoints
 - Consistent error handling and validation (Marshmallow)
+- **New:** Dedicated database seeding script (`src/seeds.py`) and CLI command (`flask seed run`) for PBAC initial data and admin user creation. Script is idempotent and replaces migration-based seeding logic.
+- **Update (2025-05-14):** Permission names and role mappings in `src/seeds.py` were corrected to match the finalized PBAC list of 21 permissions. This ensures all seeded data matches the system's authorization model and prevents downstream errors.
+- **Fix (2025-05-15):** Persistent CORS preflight (OPTIONS 404) error resolved by removing the manual @app.before_request OPTIONS handler from src/app.py and standardizing all blueprint url_prefix values to omit trailing slashes. Backend now relies solely on Flask-CORS for preflight handling. After this change, restart the backend and clear browser cache before re-testing frontend form submissions.
 
 ## Current API Entities & Endpoints
 - **Users**: Create, list, retrieve, update, delete (Admin/CSR, soft delete, activation)
@@ -136,7 +139,7 @@
 - All endpoints secured with `@require_permission('MANAGE_ROLES')`.
 - Uses proper request validation and response serialization via Marshmallow schemas.
 - Fully documented with OpenAPI specifications.
-- Routes connected to `RoleService` methods and follow consistent error handling pattern.
+- Routes connected to `RoleService` methods and follow the consistent error handling pattern.
 
 ### Step 14 Complete (2025-05-11):
 - Implemented Flask route handler in `src/routes/admin/permission_admin_routes.py` for listing all available system Permissions.
@@ -197,3 +200,11 @@
 - ✅ Security measures implemented
 - ⏳ Test coverage pending
 - ⏳ Frontend integration pending
+
+---
+
+### PBAC Seeding Workflow (2025-05-14)
+- After a database reset, run `flask seed run` to populate permissions, roles, role-permission assignments, and a default admin user.
+- The seeding script is idempotent and can be safely re-run.
+- This replaces the previous migration-based seeding logic for PBAC initial data.
+- **Update (2025-05-14):** Permission names and role mappings in `src/seeds.py` were corrected to match the finalized PBAC list of 21 permissions. This ensures all seeded data matches the system's authorization model and prevents downstream errors.

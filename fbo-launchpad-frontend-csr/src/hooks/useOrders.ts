@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import apiService, { getApiUrl } from '../services/apiService';
+import apiService from '../services/apiService';
 import { FuelOrder } from '../types/orders';
 
 export const useOrders = () => {
@@ -10,7 +10,7 @@ export const useOrders = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await apiService.get(getApiUrl('/fuel-orders/'));
+        const response = await apiService.get('/fuel-orders');
         setOrders(response.data.fuel_orders || response.data.data || []);
         setError(null);
       } catch (err: any) {

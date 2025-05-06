@@ -1,8 +1,8 @@
-import apiService, { getApiUrl } from './apiService';
+import apiService from './apiService';
 
 export const getFuelTrucks = async (params = {}) => {
   try {
-    const response = await apiService.get(getApiUrl('/fuel-trucks/'), { params });
+    const response = await apiService.get('/fuel-trucks', { params });
     return response.data.fuel_trucks || [];
   } catch (error) {
     console.error("Error fetching fuel trucks:", error.response?.data || error.message);
@@ -12,7 +12,7 @@ export const getFuelTrucks = async (params = {}) => {
 
 export const createFuelTruck = async (data) => {
   try {
-    const response = await apiService.post(getApiUrl('/fuel-trucks/'), data);
+    const response = await apiService.post('/fuel-trucks', data);
     return response.data;
   } catch (error) {
     console.error('Error creating fuel truck:', error.response?.data || error.message);
@@ -22,7 +22,7 @@ export const createFuelTruck = async (data) => {
 
 export const getFuelTruckById = async (id) => {
   try {
-    const response = await apiService.get(getApiUrl(`/fuel-trucks/${id}`));
+    const response = await apiService.get(`/fuel-trucks/${id}`);
     return response.data.fuel_truck;
   } catch (error) {
     console.error('Error fetching fuel truck:', error.response?.data || error.message);
@@ -32,7 +32,7 @@ export const getFuelTruckById = async (id) => {
 
 export const updateFuelTruck = async (id, data) => {
   try {
-    const response = await apiService.patch(getApiUrl(`/fuel-trucks/${id}`), data);
+    const response = await apiService.patch(`/fuel-trucks/${id}`, data);
     return response.data;
   } catch (error) {
     console.error('Error updating fuel truck:', error.response?.data || error.message);
@@ -42,7 +42,7 @@ export const updateFuelTruck = async (id, data) => {
 
 export const deleteFuelTruck = async (id) => {
   try {
-    const response = await apiService.delete(getApiUrl(`/fuel-trucks/${id}`));
+    const response = await apiService.delete(`/fuel-trucks/${id}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting fuel truck:', error.response?.data || error.message);

@@ -33,7 +33,7 @@ function OrderCreatePage() {
     async function fetchSetting() {
       setSettingLoading(true);
       try {
-        const res = await import('../services/apiService').then(m => m.default.get('/api/admin/assignment-settings'));
+        const res = await import('../services/apiService').then(m => m.default.get('/admin/assignment-settings'));
         setAutoAssignEnabled(res.data.auto_assign_enabled);
         setAutoAssign(res.data.auto_assign_enabled); // default to ON if enabled
       } catch {

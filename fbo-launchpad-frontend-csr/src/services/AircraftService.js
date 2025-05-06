@@ -2,7 +2,7 @@ import apiService from './apiService';
 
 export const getAircraft = async (params = {}) => {
   try {
-    const response = await apiService.get('/api/admin/aircraft', { params });
+    const response = await apiService.get('/admin/aircraft', { params });
     return response.data;
   } catch (error) {
     console.error('Error fetching aircraft:', error.response?.data || error.message);
@@ -22,7 +22,7 @@ export const getAircraftById = async (id) => {
 
 export const createAircraft = async (aircraftData) => {
   try {
-    const response = await apiService.post('/api/admin/aircraft', aircraftData);
+    const response = await apiService.post('/admin/aircraft', aircraftData);
     return response.data;
   } catch (error) {
     console.error('Error creating aircraft:', error.response?.data || error.message);
@@ -32,7 +32,7 @@ export const createAircraft = async (aircraftData) => {
 
 export const updateAircraft = async (tailNumber, aircraftData) => {
   try {
-    const response = await apiService.patch(`/api/admin/aircraft/${tailNumber}`, aircraftData);
+    const response = await apiService.patch(`/admin/aircraft/${tailNumber}`, aircraftData);
     return response.data;
   } catch (error) {
     console.error('Error updating aircraft:', error.response?.data || error.message);
@@ -42,7 +42,7 @@ export const updateAircraft = async (tailNumber, aircraftData) => {
 
 export const deleteAircraft = async (tailNumber) => {
   try {
-    await apiService.delete(`/api/admin/aircraft/${tailNumber}`);
+    await apiService.delete(`/admin/aircraft/${tailNumber}`);
     return {}; // Return empty object for successful deletion
   } catch (error) {
     console.error('Error deleting aircraft:', error.response?.data || error.message);
