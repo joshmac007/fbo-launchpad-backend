@@ -12,7 +12,8 @@ from ..schemas.aircraft_schemas import (
 
 aircraft_bp = Blueprint('aircraft_bp', __name__, url_prefix='/api/aircraft')
 
-@aircraft_bp.route('/', methods=['GET'])
+@aircraft_bp.route('', methods=['GET', 'OPTIONS'])
+@aircraft_bp.route('/', methods=['GET', 'OPTIONS'])
 @token_required
 @require_permission('VIEW_AIRCRAFT')
 def list_aircraft():
@@ -29,6 +30,8 @@ def list_aircraft():
           application/json:
             schema: AircraftListSchema
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
     filters = {}
     if 'customer_id' in request.args:
         filters['customer_id'] = request.args.get('customer_id', type=int)
@@ -38,7 +41,8 @@ def list_aircraft():
         "aircraft": [AircraftResponseSchema().dump(a) for a in aircraft]
     }), status_code
 
-@aircraft_bp.route('/', methods=['POST'])
+@aircraft_bp.route('', methods=['POST', 'OPTIONS'])
+@aircraft_bp.route('/', methods=['POST', 'OPTIONS'])
 @token_required
 @require_permission('MANAGE_AIRCRAFT')
 def create_aircraft():
@@ -60,6 +64,8 @@ def create_aircraft():
           application/json:
             schema: AircraftResponseSchema
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
     schema = AircraftCreateSchema()
     try:
         data = schema.load(request.get_json())

@@ -6,7 +6,8 @@ from ...schemas.admin_schemas import AdminCustomerSchema, AdminCustomerListRespo
 from src.extensions import apispec
 from .routes import admin_bp
 
-@admin_bp.route('/customers', methods=['GET'])
+@admin_bp.route('customers', methods=['GET', 'OPTIONS'])
+@admin_bp.route('/customers', methods=['GET', 'OPTIONS'])
 @token_required
 @require_permission('MANAGE_CUSTOMERS')
 def list_customers():
@@ -27,11 +28,14 @@ def list_customers():
         403:
           description: Forbidden (missing permission)
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
     customers, msg, status = CustomerService.get_all_customers(request.args)
     schema = AdminCustomerSchema(many=True)
     return jsonify({"customers": schema.dump(customers)}), status
 
-@admin_bp.route('/customers', methods=['POST'])
+@admin_bp.route('customers', methods=['POST', 'OPTIONS'])
+@admin_bp.route('/customers', methods=['POST', 'OPTIONS'])
 @token_required
 @require_permission('MANAGE_CUSTOMERS')
 def create_customer():
@@ -57,6 +61,8 @@ def create_customer():
         409:
           description: Conflict
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
     data = request.get_json()
     customer, msg, status = CustomerService.create_customer(data)
     if not customer:

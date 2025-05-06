@@ -99,14 +99,14 @@ def create_app(config_name=None):
     from src.routes.customer_routes import customer_bp
     from src.routes.admin.routes import admin_bp
 
-    # Register blueprints
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    # Register blueprints with strict_slashes=False to prevent 308 redirects for both /api/resource and /api/resource/
+    app.register_blueprint(auth_bp, url_prefix='/api/auth', strict_slashes=False)
     app.register_blueprint(fuel_order_bp, url_prefix='/api/fuel-orders', strict_slashes=False)
-    app.register_blueprint(user_bp, url_prefix='/api/users')
-    app.register_blueprint(truck_bp, url_prefix='/api/fuel-trucks')
-    app.register_blueprint(aircraft_bp, url_prefix='/api/aircraft')
-    app.register_blueprint(customer_bp, url_prefix='/api/customers')
-    app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(user_bp, url_prefix='/api/users', strict_slashes=False)
+    app.register_blueprint(truck_bp, url_prefix='/api/fuel-trucks', strict_slashes=False)
+    app.register_blueprint(aircraft_bp, url_prefix='/api/aircraft', strict_slashes=False)
+    app.register_blueprint(customer_bp, url_prefix='/api/customers', strict_slashes=False)
+    app.register_blueprint(admin_bp, url_prefix='/api/admin', strict_slashes=False)
 
     # --- TEMPORARY DEBUGGING CODE ---
     logger = logging.getLogger(__name__)

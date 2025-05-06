@@ -7,7 +7,8 @@ from ...schemas.admin_schemas import AdminAircraftSchema, AdminAircraftListRespo
 from src.extensions import apispec
 from .routes import admin_bp
 
-@admin_bp.route('/aircraft', methods=['GET'])
+@admin_bp.route('aircraft', methods=['GET', 'OPTIONS'])
+@admin_bp.route('/aircraft', methods=['GET', 'OPTIONS'])
 @token_required
 @require_permission('MANAGE_AIRCRAFT')
 def list_aircraft():
@@ -28,11 +29,14 @@ def list_aircraft():
         403:
           description: Forbidden (missing permission)
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
     aircraft_list, msg, status = AircraftService.get_all_aircraft(request.args)
     schema = AdminAircraftSchema(many=True)
     return jsonify({"aircraft": schema.dump(aircraft_list)}), status
 
-@admin_bp.route('/aircraft', methods=['POST'])
+@admin_bp.route('aircraft', methods=['POST', 'OPTIONS'])
+@admin_bp.route('/aircraft', methods=['POST', 'OPTIONS'])
 @token_required
 @require_permission('MANAGE_AIRCRAFT')
 def create_aircraft():
@@ -58,6 +62,8 @@ def create_aircraft():
         409:
           description: Conflict
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
     data = request.get_json()
     aircraft, msg, status = AircraftService.create_aircraft(data)
     if not aircraft:

@@ -14,7 +14,8 @@ from ..schemas import (
 # Create blueprint for user routes
 user_bp = Blueprint('user_bp', __name__, url_prefix='/api/users')
 
-@user_bp.route('/', methods=['GET'])
+@user_bp.route('', methods=['GET', 'OPTIONS'])
+@user_bp.route('/', methods=['GET', 'OPTIONS'])
 @token_required
 @require_permission('VIEW_USERS')
 def get_users():
@@ -67,6 +68,9 @@ def get_users():
           application/json:
             schema: ErrorResponseSchema
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
+    
     # Extract filter parameters from request.args
     filters = {
         'role': request.args.get('role', None, type=str),
@@ -103,7 +107,8 @@ def get_users():
         # Return the error message and status code provided by the service
         return jsonify({"error": message}), status_code  # Use status_code from service (e.g., 400, 500)
 
-@user_bp.route('/', methods=['POST'])
+@user_bp.route('', methods=['POST', 'OPTIONS'])
+@user_bp.route('/', methods=['POST', 'OPTIONS'])
 @token_required
 @require_permission('MANAGE_USERS')
 def create_user():
@@ -151,6 +156,9 @@ def create_user():
           application/json:
             schema: ErrorResponseSchema
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
+    
     try:
         # Load and validate request data
         schema = UserCreateRequestSchema()

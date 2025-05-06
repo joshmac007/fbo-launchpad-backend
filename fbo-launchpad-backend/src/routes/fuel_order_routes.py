@@ -48,10 +48,16 @@ def get_status_counts():
         return jsonify({"error": message}), status_code
 
 
-@fuel_order_bp.route('/', methods=['POST'])
+@fuel_order_bp.route('', methods=['POST', 'OPTIONS'])
+@fuel_order_bp.route('/', methods=['POST', 'OPTIONS'])
 @token_required
 @require_permission('CREATE_ORDER')
 def create_fuel_order():
+    if request.method == 'OPTIONS':
+        # Pre-flight request. Reply successfully:
+        # Flask-CORS will handle adding the necessary headers.
+        # We just need to return a valid response.
+        return jsonify({'message': 'OPTIONS request successful'}), 200
     current_app.logger.info(f"--- Entered create_fuel_order function. Request Method: {request.method} ---")
     import logging
     logger = logging.getLogger(__name__)
@@ -175,10 +181,13 @@ def create_fuel_order():
             try:
                 # Convert to expected type if necessary
                 if field_type == int:
-                    data[field] = int(data[field])
+                    # Allow None for optional integer fields
+                    if data[field] is not None:
+                        data[field] = int(data[field])
+                    # If data[field] is None, leave as None
                 elif field_type == bool and not isinstance(data[field], bool):
                     data[field] = bool(data[field])
-                elif field_type == str and not isinstance(data[field], str):
+                elif field_type == str and data[field] is not None and not isinstance(data[field], str):
                     data[field] = str(data[field])
             except (ValueError, TypeError):
                 logger.error('Step 3.1: Invalid type for optional field %s. Value: %s', field, data[field])

@@ -1,0 +1,11 @@
+{
+  "tail_number": "N12345",
+  "fuel_type": "Jet A",
+  "assigned_lst_user_id": 1,
+  "assigned_truck_id": 1,
+  "requested_amount": 500.0,
+  "location_on_ramp": "Ramp B",
+  "additive_requested": false,
+  "csr_notes": "Curl test order",
+  "customer_id": null
+}

@@ -91,11 +91,15 @@ def token_required(f):
 def require_permission(permission_name: str):
     """
     Decorator to ensure the logged-in user has the specified permission.
-    Must be applied AFTER @token_required.
+    Must be applied AFTER @token_required. Skips checks for OPTIONS requests.
     """
     def _decorator(f):
         @wraps(f)
         def _wrapper(*args, **kwargs):
+            # Skip permission check for OPTIONS requests (CORS preflight)
+            if request.method == 'OPTIONS':
+                return f(*args, **kwargs)
+
             # 1. Check if user context exists (from @token_required)
             if not hasattr(g, 'current_user') or not g.current_user:
                 # Log this internal server error

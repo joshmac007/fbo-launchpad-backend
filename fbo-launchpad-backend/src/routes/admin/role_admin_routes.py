@@ -16,7 +16,8 @@ from marshmallow import ValidationError
 from src.extensions import apispec
 from .routes import admin_bp
 
-@admin_bp.route('/roles', methods=['GET'])
+@admin_bp.route('roles', methods=['GET', 'OPTIONS'])
+@admin_bp.route('/roles', methods=['GET', 'OPTIONS'])
 @token_required
 @require_permission('MANAGE_ROLES')
 def get_roles():
@@ -37,11 +38,14 @@ def get_roles():
         403:
           description: Forbidden (missing permission)
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
     roles, msg, status = RoleService.get_all_roles()
     schema = RoleSchema(many=True)
     return jsonify({"roles": schema.dump(roles)}), status
 
-@admin_bp.route('/roles', methods=['POST'])
+@admin_bp.route('roles', methods=['POST', 'OPTIONS'])
+@admin_bp.route('/roles', methods=['POST', 'OPTIONS'])
 @token_required
 @require_permission('MANAGE_ROLES')
 def create_role():
@@ -67,6 +71,8 @@ def create_role():
         409:
           description: Conflict
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
     data = request.get_json()
     role, msg, status = RoleService.create_role(data)
     if not role:

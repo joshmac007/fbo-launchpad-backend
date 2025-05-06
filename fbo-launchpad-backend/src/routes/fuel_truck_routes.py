@@ -13,10 +13,13 @@ from ..schemas import (
 # Create the blueprint for fuel truck routes
 truck_bp = Blueprint('truck_bp', __name__, url_prefix='/api/fuel-trucks')
 
-@truck_bp.route('/', methods=['GET'])
+@truck_bp.route('', methods=['GET', 'OPTIONS'])
+@truck_bp.route('/', methods=['GET', 'OPTIONS'])
 @token_required
 @require_permission('VIEW_TRUCKS')
 def get_fuel_trucks():
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
     """Get a list of fuel trucks.
     Requires VIEW_TRUCKS permission. Supports filtering by active status.
     ---

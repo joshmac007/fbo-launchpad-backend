@@ -12,7 +12,8 @@ from ..schemas.customer_schemas import (
 
 customer_bp = Blueprint('customer_bp', __name__, url_prefix='/api/customers')
 
-@customer_bp.route('/', methods=['GET'])
+@customer_bp.route('', methods=['GET', 'OPTIONS'])
+@customer_bp.route('/', methods=['GET', 'OPTIONS'])
 @token_required
 @require_permission('VIEW_CUSTOMERS')
 def list_customers():
@@ -29,13 +30,16 @@ def list_customers():
           application/json:
             schema: CustomerListSchema
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
     customers, message, status_code = CustomerService.get_all_customers()
     return jsonify({
         "message": message,
         "customers": [CustomerResponseSchema().dump(c) for c in customers]
     }), status_code
 
-@customer_bp.route('/', methods=['POST'])
+@customer_bp.route('', methods=['POST', 'OPTIONS'])
+@customer_bp.route('/', methods=['POST', 'OPTIONS'])
 @token_required
 @require_permission('MANAGE_CUSTOMERS')
 def create_customer():
@@ -57,6 +61,8 @@ def create_customer():
           application/json:
             schema: CustomerResponseSchema
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
     schema = CustomerCreateSchema()
     try:
         data = schema.load(request.get_json())

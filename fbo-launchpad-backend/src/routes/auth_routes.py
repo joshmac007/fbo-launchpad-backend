@@ -30,7 +30,8 @@ def reset_rate_limits():
     global login_attempts
     login_attempts = {}
 
-@auth_bp.route('/register', methods=['POST'])
+@auth_bp.route('/register', methods=['POST', 'OPTIONS'])
+@auth_bp.route('register', methods=['POST', 'OPTIONS'])
 def register():
     """Register a new user.
     ---
@@ -58,6 +59,9 @@ def register():
           application/json:
             schema: ErrorResponseSchema
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
+
     schema = RegisterRequestSchema()
     try:
         data = schema.load(request.json)
@@ -87,7 +91,8 @@ def register():
         }
     }), 201
 
-@auth_bp.route('/login', methods=['POST'])
+@auth_bp.route('/login', methods=['POST', 'OPTIONS'])
+@auth_bp.route('login', methods=['POST', 'OPTIONS'])
 @rate_limit(limit=5, window=300)
 def login():
     """Login endpoint that returns a JWT token on successful authentication
@@ -121,6 +126,9 @@ def login():
           application/json:
             schema: ErrorResponseSchema
     """
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
+
     try:
         # Validate request data
         schema = LoginRequestSchema()
