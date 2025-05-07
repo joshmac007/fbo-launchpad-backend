@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
 
-const AircraftForm = ({ initialData = {}, onSubmit, isSubmitting, error }) => {
-  const isEditMode = Boolean(initialData && initialData.tail_number);
+const AircraftForm = ({ initialData, onSubmit, isSubmitting, error }) => {
+  const currentInitialData = initialData || {}; // Ensure currentInitialData is an object
+  const isEditMode = Boolean(currentInitialData && currentInitialData.tail_number);
   const [formData, setFormData] = useState({
-    tail_number: initialData.tail_number || '',
-    customer_id: initialData.customer_id || '',
-    aircraft_type: initialData.aircraft_type || '',
-    fuel_type: initialData.fuel_type || ''
+    tail_number: currentInitialData.tail_number || '',
+    customer_id: currentInitialData.customer_id || '',
+    aircraft_type: currentInitialData.aircraft_type || '',
+    fuel_type: currentInitialData.fuel_type || ''
   });
   const [formError, setFormError] = useState('');
 
   useEffect(() => {
+    const effectiveInitialData = initialData || {}; // Ensure effectiveInitialData is an object
     setFormData({
-      tail_number: initialData.tail_number || '',
-      customer_id: initialData.customer_id || '',
-      aircraft_type: initialData.aircraft_type || '',
-      fuel_type: initialData.fuel_type || ''
+      tail_number: effectiveInitialData.tail_number || '',
+      customer_id: effectiveInitialData.customer_id || '',
+      aircraft_type: effectiveInitialData.aircraft_type || '',
+      fuel_type: effectiveInitialData.fuel_type || ''
     });
     setFormError('');
   }, [initialData]);

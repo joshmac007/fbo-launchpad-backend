@@ -11,7 +11,7 @@
 
 # --- USER CONFIGURATION ---
 # Set your JWT token here (obtain via /api/auth/login)
-TOKEN="PASTE_YOUR_JWT_TOKEN_HERE"
+TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0NjU2MTIwMCwianRpIjoiOWEwN2I5NzItOTQzZi00YTQxLWI2N2UtZGE5NTViMGM3Y2I2IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjMiLCJuYmYiOjE3NDY1NjEyMDAsImNzcmYiOiI5MzdhMWFiMy0wZDc1LTRhYWItYmI5Ny1hZjk0ZjlmYmNjNjQiLCJleHAiOjE3NDY1NjQ4MDAsInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlcyI6WyJTeXN0ZW0gQWRtaW5pc3RyYXRvciJdLCJpc19hY3RpdmUiOnRydWV9.5xgbhJsk4_k-Y3h4SoUS9k3kPwgEKdEOrtazROiuBRA"
 
 # Set the origin to match your frontend (for CORS testing)
 ORIGIN="http://localhost:3000"

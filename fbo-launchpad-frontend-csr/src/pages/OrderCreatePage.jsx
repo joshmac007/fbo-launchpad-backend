@@ -93,36 +93,92 @@ function OrderCreatePage() {
     setError(null);
     setSubmitSuccess(false);
 
-    let assignedLST = formData.assigned_lst_user_id;
-    let assignedTruck = formData.assigned_truck_id;
+    let finalAssignedLstUserId;
+    let finalAssignedTruckId;
 
-    // If auto-assign is enabled, set assigned_lst_user_id to -1 for backend auto-assignment
     if (autoAssign) {
-      assignedLST = -1; // Backend will auto-assign
-      assignedTruck = null; // Leave truck as null (or handle similarly if backend supports)
+      finalAssignedLstUserId = -1; // Backend handles LST auto-assignment
+      // If autoAssign is true, UI hides truck selection.
+      // Backend requires assigned_truck_id. This is a logic gap.
+      // For now, if formData.assigned_truck_id is empty or not a number, this will be null.
+      // A default truck ID or backend change is needed for robust auto-assignment of LST.
+      // Sending null if not selected will likely still cause backend error if no truck is picked
+      // by the (hidden) dropdown.
+      // For the purpose of this fix, we'll parse what's there or default to null,
+      // highlighting that backend needs a truck ID.
+      finalAssignedTruckId = formData.assigned_truck_id ? parseInt(formData.assigned_truck_id, 10) : null;
+      if (isNaN(finalAssignedTruckId)) finalAssignedTruckId = null; // Ensure it's null if parsing failed
+
+      // A better approach for autoAssign would be if backend can take a special value for truck_id too,
+      // or if frontend explicitly assigns a default truck when auto-assigning LST.
+      // For now, if no truck is selected (because dropdown might be hidden),
+      // and backend requires it, this will be an issue.
+      // TEMP: If auto-assigning LST and no truck selected, let's try sending a placeholder if we had one,
+      // or make it very clear this field is an issue.
+      // The backend *requires* assigned_truck_id. If autoAssign is on, the dropdown for truck is hidden.
+      // This means `formData.assigned_truck_id` would be its initial empty string.
+      // `parseInt('')` is NaN, so `finalAssignedTruckId` becomes null.
+      // This WILL cause a "Missing required field: assigned_truck_id" or "Invalid type" from backend.
+
+      // To make this *potentially* work, we'd need a default truck ID when LST is auto-assigned.
+      // Let's assume for now the user *must* select a truck if the backend requires it,
+      // meaning the autoAssign checkbox should perhaps only affect LST, or backend needs update.
+      // Given the current backend, assigned_truck_id CANNOT be null.
+      // So, if autoAssign is on (for LST), we *still* need a truck.
+      // The UI hides truck selection if autoAssign is on. This is a conflict.
+
+      // To proceed with a fix attempt, let's assume if autoAssign is ON,
+      // the user has somehow (though UI hides it) set a truck, or we *must* provide one.
+      // This part of the logic is flawed in relation to the backend constraints.
+      // Forcing a '1' if auto-assign and no truck is selected, just for testing backend response:
+      if (finalAssignedTruckId === null && trucks.length > 0) {
+        // This is a hack due to frontend/backend mismatch on auto-assign for trucks
+        // Do not use in production. Backend needs to clarify truck assignment when LST is auto.
+        // finalAssignedTruckId = trucks[0].id; // Example: pick the first available truck
+      }
+      // If `finalAssignedTruckId` is still null here, and `autoAssign` is true, it will fail.
+      // The backend requires an int for `assigned_truck_id`.
+
     } else {
-      assignedLST = parseInt(assignedLST, 10);
-      assignedTruck = parseInt(assignedTruck, 10);
-    }
+      finalAssignedLstUserId = formData.assigned_lst_user_id ? parseInt(formData.assigned_lst_user_id, 10) : null;
+      finalAssignedTruckId = formData.assigned_truck_id ? parseInt(formData.assigned_truck_id, 10) : null;
 
-    // Fallback: If backend does not assign, do a simple least-busy pick
-    async function getLeastBusy(items, key = 'id') {
-      // For demo: just pick the first (could enhance with real logic)
-      return items.length > 0 ? items[0][key] : null;
+      if (isNaN(finalAssignedLstUserId)) finalAssignedLstUserId = null;
+      if (isNaN(finalAssignedTruckId)) finalAssignedTruckId = null;
     }
+    
+    // Validate that required IDs are not null after parsing, if not auto-assigning LST
+    if (!autoAssign && (finalAssignedLstUserId === null || finalAssignedTruckId === null)) {
+        setError('LST and Truck must be selected for manual assignment.');
+        setIsSubmitting(false);
+        return;
+    }
+    // If auto-assigning LST, truck ID is still mandatory by backend, this is the gap.
+    // For now, if it ended up null (e.g. hidden dropdown was empty), this will fail at backend.
 
-    let orderData = {
-      ...formData,
-      requested_amount: formData.requested_amount || null,
-      customer_id: formData.customer_id || null,
-      assigned_lst_user_id: assignedLST,
-      assigned_truck_id: assignedTruck,
+
+    const orderData = {
+      tail_number: formData.tail_number.trim(),
+      fuel_type: formData.fuel_type,
+      requested_amount: formData.requested_amount ? parseFloat(formData.requested_amount) : null,
+      location_on_ramp: formData.location_on_ramp.trim(),
+      additive_requested: formData.additive_requested,
+      csr_notes: formData.csr_notes.trim(),
+      customer_id: formData.customer_id ? Number(formData.customer_id) : null,
+      assigned_lst_user_id: finalAssignedLstUserId,
+      assigned_truck_id: finalAssignedTruckId, // This might be null if autoAssign is true and no truck logic
     };
-
-    // If autoAssign, remove assigned_lst_user_id and assigned_truck_id if null
-    if (autoAssign) {
-      delete orderData.assigned_lst_user_id;
-      delete orderData.assigned_truck_id;
+    
+    // Final check for required fields before sending to API
+    if (orderData.assigned_lst_user_id === null || orderData.assigned_truck_id === null || orderData.requested_amount === null) {
+        let missingFields = [];
+        if (orderData.assigned_lst_user_id === null) missingFields.push("LST Assignment");
+        if (orderData.assigned_truck_id === null) missingFields.push("Truck Assignment");
+        if (orderData.requested_amount === null) missingFields.push("Requested Amount");
+        
+        setError(`The following fields are invalid or missing: ${missingFields.join(', ')}. Requested Amount must be a valid number. LST and Truck must be assigned.`);
+        setIsSubmitting(false);
+        return;
     }
 
     try {

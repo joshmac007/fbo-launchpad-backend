@@ -110,17 +110,30 @@ def create_app(config_name=None):
 
     # --- TEMPORARY DEBUGGING CODE ---
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO) # Ensure INFO level is captured
-    logger.info("--- Registered URL Rules (Fuel Order Focus) ---")
-    rules_found = False
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+    logger.info("--- Complete Registered URL Map ---")
+    all_rules_logged = []
     for rule in app.url_map.iter_rules():
-        # Filter specifically for the fuel order endpoint
-        if rule.endpoint == 'fuel_order_bp.create_fuel_order' or rule.rule == '/api/fuel-orders' or rule.rule == '/api/fuel-orders/':
-            logger.info(f"Rule: {rule.rule}, Endpoint: {rule.endpoint}, Methods: {list(rule.methods)}")
-            rules_found = True
-    if not rules_found:
-        logger.info("No specific rules found for fuel order creation endpoint.")
-    logger.info("--- End of URL Rules ---")
+        all_rules_logged.append(f"Rule: {rule.rule}, Endpoint: {rule.endpoint}, Methods: {sorted(list(rule.methods))}")
+    all_rules_logged.sort()
+    for log_line in all_rules_logged:
+        logger.info(log_line)
+    
+    logger.info("\n--- Specifically checking /api/admin routes ---")
+    admin_rules_found = False
+    for rule in app.url_map.iter_rules():
+        if rule.rule.startswith('/api/admin'):
+            logger.info(f"Admin Rule: {rule.rule}, Endpoint: {rule.endpoint}, Methods: {sorted(list(rule.methods))}")
+            admin_rules_found = True
+    if not admin_rules_found:
+        logger.info("No rules found starting with /api/admin.")
+    logger.info("--- End of URL Map Inspection ---")
     # --- END TEMPORARY DEBUGGING CODE ---
 
     # Register schemas and paths with apispec
@@ -253,7 +266,7 @@ def create_app(config_name=None):
         from src.routes.admin.aircraft_admin_routes import list_aircraft as admin_list_aircraft, create_aircraft as admin_create_aircraft, get_aircraft as admin_get_aircraft, update_aircraft as admin_update_aircraft, delete_aircraft as admin_delete_aircraft
         from src.routes.admin.customer_admin_routes import list_customers as admin_list_customers, create_customer as admin_create_customer, get_customer as admin_get_customer, update_customer as admin_update_customer, delete_customer as admin_delete_customer
         from src.routes.admin.permission_admin_routes import get_permissions
-        from src.routes.admin.user_admin_routes import get_users as admin_get_users, create_user as admin_create_user, get_user as admin_get_user, update_user as admin_update_user, delete_user as admin_delete_user
+        from src.routes.admin.user_admin_routes import get_users as admin_get_users
         from src.routes.admin.role_admin_routes import get_roles, create_role, get_role, update_role, delete_role, get_role_permissions
 
         # Register Admin Aircraft Views
@@ -272,10 +285,10 @@ def create_app(config_name=None):
 
         # Register Admin User Views
         apispec.path(view=admin_get_users, bp=admin_bp)
-        apispec.path(view=admin_create_user, bp=admin_bp)
-        apispec.path(view=admin_get_user, bp=admin_bp)
-        apispec.path(view=admin_update_user, bp=admin_bp)
-        apispec.path(view=admin_delete_user, bp=admin_bp)
+        # apispec.path(view=admin_create_user, bp=admin_bp)
+        # apispec.path(view=admin_get_user, bp=admin_bp)
+        # apispec.path(view=admin_update_user, bp=admin_bp)
+        # apispec.path(view=admin_delete_user, bp=admin_bp)
 
         # Register Admin Role Views
         apispec.path(view=get_roles, bp=admin_bp)

@@ -37,3 +37,9 @@ alwaysApply: false
 *   **Misconception:** Attempted to add a new Dashboard component alongside the existing one during refactoring.
 *   **Resolution:** Realized a complete replacement of the old implementation within `DashboardPage.jsx` was necessary for clarity and to avoid conflicting logic.
 *   **Lesson Learned:** When replacing core functionality or components, prioritize a clean cutover rather than running old and new implementations in parallel. Ensure all references are updated. (See `activeContext.md` from that date for details).
+
+## Handling Foreign Key Constraints Proactively (Backend - 2025-05-07)
+
+*   **Initial Situation:** The `FuelOrderService.create_fuel_order` method would raise a `ForeignKeyViolation` if a fuel order was created for a `tail_number` not present in the `aircraft` table.
+*   **Resolution:** Modified the service to check for the aircraft's existence. If not found, an `Aircraft` record is automatically created with predefined placeholder values (`aircraft_type="UNKNOWN_TYPE"`, `fuel_type="UNKNOWN_FUEL"`) and added to the same database transaction as the fuel order.
+*   **Lesson Learned:** For workflows where dependent entities might not yet exist, consider implementing on-the-fly creation of these entities with sensible defaults/placeholders. This can improve user experience by reducing errors and manual pre-creation steps, provided that there's a subsequent process to update placeholder data. This approach ensures transactional integrity by committing all related records together. (See `docs/technical.md` and `tasks/active_context.md` from 2025-05-07 for details on the specific `ForeignKeyViolation` and its resolution).

@@ -14,21 +14,22 @@ from src.models import (
 from src.extensions import db
 from flask import current_app
 from typing import Optional, Tuple, List, Dict, Any, Union
+import logging
+import traceback
 
 class FuelOrderService:
     @classmethod
     def get_order_status_counts(cls, current_user):
         """
         Calculate and return counts of fuel orders by status groups for dashboard cards.
-        CSR, ADMIN, and LST roles are allowed (global counts).
+        PBAC: Permission-based, not role-based. Only users with 'VIEW_ORDER_STATS' permission should access this.
         Returns: (dict, message, status_code)
         """
-        from src.models import FuelOrderStatus, UserRole, FuelOrder
+        from src.models import FuelOrderStatus, FuelOrder
         from sqlalchemy import func, case
         from src.extensions import db
-        if current_user.role not in [UserRole.CSR, UserRole.ADMIN, UserRole.LST]:
-            return None, "Forbidden: Insufficient permissions for status counts.", 403
         try:
+            # PBAC: Permission check is handled by decorator, so no need to check here
             pending_statuses = [FuelOrderStatus.DISPATCHED]
             in_progress_statuses = [FuelOrderStatus.ACKNOWLEDGED, FuelOrderStatus.EN_ROUTE, FuelOrderStatus.FUELING]
             completed_statuses = [FuelOrderStatus.COMPLETED]
@@ -45,84 +46,79 @@ class FuelOrderService:
             return result_counts, "Status counts retrieved successfully.", 200
         except Exception as e:
             db.session.rollback()
-            from flask import current_app
-            current_app.logger.error(f"Error retrieving fuel order status counts: {str(e)}")
+            import logging
+            logging.getLogger(__name__).error(f"Error retrieving fuel order status counts: {str(e)}")
             return None, f"Database error retrieving status counts: {str(e)}", 500
 
     @classmethod
     def get_status_counts(cls, current_user):
         """
-        Calculate and return counts of fuel orders by status groups for dashboard cards.
-        CSR, ADMIN, and LST roles are allowed (global counts).
+        PBAC: Permission-based, not role-based. Only users with 'VIEW_ORDER_STATS' permission should access this.
         Returns: (dict, message, status_code)
         """
-        return cls.get_order_status_counts(current_user)
+        try:
+            return cls.get_order_status_counts(current_user)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Error in get_status_counts: {str(e)}")
+            return None, f"Internal error in get_status_counts: {str(e)}", 500
 
     @classmethod
-    def create_fuel_order(cls, order_data: dict) -> Tuple[Union[FuelOrder, None], Union[str, None]]:
-        from src.models import User, UserRole, FuelOrder, FuelOrderStatus
+    def create_fuel_order(cls, order_data: dict) -> Tuple[Optional[FuelOrder], Optional[str], Optional[int], Optional[bool]]:
+        from src.models import User, UserRole, FuelOrder, FuelOrderStatus, Aircraft
         from src.extensions import db
         import logging
         logger = logging.getLogger(__name__)
 
-        # --- NEW: Check if any users exist ---
+        # --- Check if any users exist (existing logic) ---
         user_count = User.query.count()
         if user_count == 0:
             return (
                 None,
                 "No users exist in the system. Please create an ADMIN user via the CLI or database to access the admin panel and create LST users.",
-                400
+                400,
+                False # aircraft_created_this_request
             )
 
-        """
-        Create a new fuel order after validating all required entities exist and are valid.
-
-        - If assigned_lst_user_id == -1, auto-assign the least busy active LST.
-        - Otherwise, validate the provided LST ID.
-        - Truck assignment logic is unchanged.
-
-        Args:
-            order_data (dict): Dictionary containing the validated order data from the route handler
-                Required keys:
-                - tail_number (str): Aircraft tail number
-                - fuel_type (str): Type of fuel to be dispensed
-                - assigned_lst_user_id (int): ID of the LST user assigned to the order (or -1 for auto-assign)
-                - assigned_truck_id (int): ID of the fuel truck assigned to the order
-                Optional keys:
-                - customer_id (int): ID of the customer if applicable
-                - additive_requested (bool): Whether fuel additive was requested
-                - requested_amount (float): Amount of fuel requested
-                - location_on_ramp (str): Location of the aircraft on the ramp
-                - csr_notes (str): Notes from the CSR
-        Returns:
-            tuple[FuelOrder | None, str | None]: Returns either:
-                - (FuelOrder, None) on success
-                - (None, error_message) on failure
-        """
-        from src.models import User, UserRole, FuelOrder, FuelOrderStatus
-        from src.extensions import db
-        import logging
-        logger = logging.getLogger(__name__)
+        # Extract data
         tail_number = order_data.get('tail_number')
-        fuel_type = order_data.get('fuel_type')
+        fuel_type_from_order = order_data.get('fuel_type') # Renamed to avoid conflict with aircraft.fuel_type
         assigned_lst_user_id = order_data.get('assigned_lst_user_id')
         assigned_truck_id = order_data.get('assigned_truck_id')
-        customer_id = order_data.get('customer_id')
+        customer_id = order_data.get('customer_id') # For FuelOrder, not new Aircraft
 
-        # Check for required fields
-        if not all([tail_number, fuel_type, assigned_lst_user_id is not None, assigned_truck_id is not None]):
-            return None, "Missing required fields."
+        # Validate presence of tail_number specifically first for aircraft check
+        if not tail_number:
+            return None, "Tail number is required.", 400, False # aircraft_created_this_request
+
+        # --- Check for Aircraft and auto-create if not found ---
+        aircraft = Aircraft.query.get(tail_number)
+        aircraft_created_this_request = False
+        if not aircraft:
+            logger.info(f"Aircraft with tail number {tail_number} not found. Auto-creating.")
+            placeholder_aircraft_type = "UNKNOWN_TYPE"
+            placeholder_fuel_type = "UNKNOWN_FUEL" # Consider if fuel_type_from_order could be used if appropriate
+
+            aircraft = Aircraft(
+                tail_number=tail_number,
+                aircraft_type=placeholder_aircraft_type,
+                fuel_type=placeholder_fuel_type
+                # customer_id is not part of Aircraft model, so not set here
+            )
+            db.session.add(aircraft)
+            aircraft_created_this_request = True
+            # DO NOT COMMIT HERE - will be part of the main transaction for the fuel order
+
+        # Check for other required fields for the fuel order itself
+        # Note: tail_number is already validated. fuel_type_from_order is for the order.
+        if not all([fuel_type_from_order, assigned_lst_user_id is not None, assigned_truck_id is not None]):
+            return None, "Missing required fields for fuel order (fuel_type, LST, truck).", 400, aircraft_created_this_request
 
         # --- LST Assignment Logic ---
         if assigned_lst_user_id == -1:
-            # Auto-assign the least busy active LST
             active_lsts = User.query.filter(User.role == UserRole.LST, User.is_active == True).all()
-            logger.debug(f"[DEBUG] Found {len(active_lsts)} active LST users: {[{'id': u.id, 'username': u.username, 'role': u.role, 'is_active': u.is_active} for u in active_lsts]}")
             if not active_lsts:
-                all_lsts = User.query.filter(User.role == UserRole.LST).all()
-                logger.debug(f"[DEBUG] All LST users (regardless of active): {[{'id': u.id, 'username': u.username, 'role': u.role, 'is_active': u.is_active} for u in all_lsts]}")
-                logger.debug(f"[DEBUG] All users: {[{'id': u.id, 'username': u.username, 'role': u.role, 'is_active': u.is_active} for u in User.query.all()]}")
-                return None, "No available LST found for auto-assignment.", 400
+                return None, "No available LST found for auto-assignment.", 400, aircraft_created_this_request
             min_count = None
             chosen_lst = None
             active_statuses = [
@@ -140,97 +136,64 @@ class FuelOrderService:
                     min_count = count
                     chosen_lst = lst
             if not chosen_lst:
-                return None, "No available LST found for auto-assignment.", 400
+                return None, "No available LST found for auto-assignment.", 400, aircraft_created_this_request
             logger.info(f"Auto-assigned LST user: {chosen_lst.id} (Active orders: {min_count})")
             assigned_lst_user_id = chosen_lst.id
-            order_data['assigned_lst_user_id'] = assigned_lst_user_id
+            # order_data['assigned_lst_user_id'] = assigned_lst_user_id # Not needed if using var directly
         else:
-            # Manual assignment: validate LST exists, is LST, and active
             lst_user = User.query.filter_by(id=assigned_lst_user_id, role=UserRole.LST, is_active=True).first()
             if not lst_user:
-                return None, f"Assigned LST user {assigned_lst_user_id} does not exist, is not active, or is not an LST.", 400
+                return None, f"Assigned LST user {assigned_lst_user_id} does not exist, is not active, or is not an LST.", 400, aircraft_created_this_request
 
-        # Truck assignment logic (unchanged)
-        # ... (existing validation for truck)
-
-        # Create the FuelOrder (existing logic)
-        try:
-            new_order = FuelOrder(
-                tail_number=tail_number,
-                fuel_type=fuel_type,
-                assigned_lst_user_id=assigned_lst_user_id,
-                assigned_truck_id=assigned_truck_id,
-                customer_id=customer_id,
-                additive_requested=order_data.get('additive_requested', False),
-                requested_amount=order_data.get('requested_amount'),
-                location_on_ramp=order_data.get('location_on_ramp'),
-                csr_notes=order_data.get('csr_notes'),
-                status=FuelOrderStatus.DISPATCHED
-            )
-            db.session.add(new_order)
-            db.session.commit()
-            return new_order, None
-        except Exception as e:
-            db.session.rollback()
-            logger.error(f"Error creating fuel order: {str(e)}")
-            return None, f"Database error creating fuel order: {str(e)}"
-            return None, "Missing required fields: tail_number, fuel_type, assigned_lst_user_id, and assigned_truck_id are required"
-
-        # Check if aircraft exists
-        aircraft = Aircraft.query.get(tail_number)
-        if not aircraft:
-            return None, f"Aircraft with tail number {tail_number} not found"
-
-        # Check if LST user exists and is valid
-        lst_user = User.query.get(assigned_lst_user_id)
-        if not lst_user:
-            return None, f"User with ID {assigned_lst_user_id} not found"
-        if lst_user.role != UserRole.LST:
-            return None, f"User {assigned_lst_user_id} is not an LST"
-        if not lst_user.is_active:
-            return None, f"LST user {assigned_lst_user_id} is not active"
-
-        # Check if fuel truck exists and is active
+        # --- Truck Validation ---
+        # Assuming truck validation logic exists here or is part of route handler.
+        # For this example, we'll just check if truck ID leads to a valid truck.
         truck = FuelTruck.query.get(assigned_truck_id)
         if not truck:
-            return None, f"Fuel truck with ID {assigned_truck_id} not found"
+            return None, f"Fuel truck with ID {assigned_truck_id} not found.", 400, aircraft_created_this_request
         if not truck.is_active:
-            return None, f"Fuel truck {assigned_truck_id} is not active"
-
-        # Check customer if provided
+            return None, f"Fuel truck {assigned_truck_id} is not active.", 400, aircraft_created_this_request
+        
+        # --- Customer Validation (Optional) ---
         if customer_id:
             customer = Customer.query.get(customer_id)
             if not customer:
-                return None, f"Customer with ID {customer_id} not found"
+                return None, f"Customer with ID {customer_id} not found.", 400, aircraft_created_this_request
 
-        # Create new FuelOrder instance
+
+        # Create the FuelOrder
         try:
             new_order = FuelOrder(
-                tail_number=tail_number,
-                fuel_type=fuel_type,
+                tail_number=aircraft.tail_number, # Use tail_number from the aircraft object
+                fuel_type=fuel_type_from_order, # Use fuel_type from the order data
                 assigned_lst_user_id=assigned_lst_user_id,
                 assigned_truck_id=assigned_truck_id,
-                customer_id=customer_id,  # This is optional, will be None if not provided
+                customer_id=customer_id, # For the FuelOrder
                 additive_requested=order_data.get('additive_requested', False),
                 requested_amount=order_data.get('requested_amount'),
                 location_on_ramp=order_data.get('location_on_ramp'),
                 csr_notes=order_data.get('csr_notes'),
-                # Set initial status and timestamps
                 status=FuelOrderStatus.DISPATCHED,
                 dispatch_timestamp=datetime.utcnow()
-                # created_at will be set automatically by model default
             )
-
-            # Add and commit to database
             db.session.add(new_order)
+            
+            # Commit the session (includes new_order and potentially new_aircraft)
             db.session.commit()
             
-            return new_order, None  # Return the created order with no error message
+            message = "Fuel order created successfully."
+            if aircraft_created_this_request:
+                message += f" New aircraft {aircraft.tail_number} was auto-created with placeholder details."
+            
+            return new_order, message, 201, aircraft_created_this_request
             
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"Error creating fuel order: {str(e)}")
-            return None, f"Database error while creating fuel order: {str(e)}"
+            logger.error(f"Error creating fuel order: {str(e)} traceback: {traceback.format_exc()}")
+            # Check for specific FK violation on aircraft if not auto-created, though auto-create should prevent this path.
+            if "violates foreign key constraint" in str(e) and "fuel_orders_tail_number_fkey" in str(e) and not aircraft_created_this_request:
+                 return None, f"Database error: Aircraft with tail number {tail_number} could not be referenced. Ensure it exists or was auto-created.", 500, False
+            return None, f"Database error during fuel order creation: {str(e)}", 500, aircraft_created_this_request
 
     @classmethod
     def get_fuel_orders(
@@ -239,80 +202,56 @@ class FuelOrderService:
         filters: Optional[Dict[str, Any]] = None
     ) -> Tuple[Optional[Any], str]:
         """
-        Retrieve paginated fuel orders based on user role and optional filters.
-        
-        Args:
-            current_user (User): The authenticated user making the request
-            filters (Optional[Dict[str, Any]]): Optional dictionary containing filter parameters
-                - status (str): Filter by order status
-                - page (int): Page number (default: 1)
-                - per_page (int): Items per page (default: 20, max: 100)
-                - Other filters can be added as needed
-        
-        Returns:
-            Tuple[Optional[Any], str]: A tuple containing:
-                - Pagination object if successful (contains items, page metadata), None if error
-                - Success/error message
+        Retrieve paginated fuel orders based on user PBAC and optional filters.
+        PBAC: If user lacks 'VIEW_ALL_ORDERS', only show orders assigned to them.
         """
-        # Initialize base query
-        query = FuelOrder.query
-
-        # Apply role-based filtering
-        if current_user.role == UserRole.LST:
-            # LSTs can only see orders assigned to them
-            query = query.filter(FuelOrder.assigned_lst_user_id == current_user.id)
-        elif current_user.role in [UserRole.CSR, UserRole.ADMIN]:
-            # CSRs and Admins can see all orders
-            pass
-        else:
-            current_app.logger.error(f"Unexpected user role encountered: {current_user.role}")
-            return None, "Forbidden: User role cannot access orders"
-        
-        # Apply filtering based on request parameters
-        if filters:
-            # Filter by status
-            status_filter = filters.get('status')
-            if status_filter:
-                try:
-                    # Convert string status from filter to FuelOrderStatus enum member
-                    status_enum = FuelOrderStatus[status_filter.upper()]
-                    query = query.filter(FuelOrder.status == status_enum)
-                except KeyError:
-                    # Invalid status string provided in filter
-                    return None, f"Invalid status value provided: {status_filter}"
-
-            # TODO: Add other filters here (e.g., date range, tail_number)
-
-        # Extract and validate pagination parameters
+        logger = logging.getLogger(__name__)
         try:
-            page = int(filters.get('page', 1))
-            per_page = int(filters.get('per_page', 20))
-            
-            # Validate pagination parameters
-            if page < 1:
+            logger.info(f"[FuelOrderService.get_fuel_orders] User: {getattr(current_user, 'id', None)} | Filters: {filters}")
+            query = FuelOrder.query
+
+            # PBAC: Only show all orders if user has permission
+            if not current_user.has_permission('VIEW_ALL_ORDERS'):
+                # Only see their assigned orders
+                query = query.filter(FuelOrder.assigned_lst_user_id == current_user.id)
+
+            # Apply filtering based on request parameters
+            if filters:
+                status_filter = filters.get('status')
+                if status_filter:
+                    try:
+                        status_enum = FuelOrderStatus[status_filter.upper()]
+                        query = query.filter(FuelOrder.status == status_enum)
+                    except KeyError:
+                        return None, f"Invalid status value provided: {status_filter}"
+                # TODO: Add other filters here
+
+            try:
+                page = int(filters.get('page', 1))
+                per_page = int(filters.get('per_page', 20))
+                if page < 1:
+                    page = 1
+                if per_page < 1:
+                    per_page = 20
+                if per_page > 100:
+                    per_page = 100
+            except (ValueError, TypeError):
                 page = 1
-            if per_page < 1:
                 per_page = 20
-            if per_page > 100:  # Maximum limit to prevent abuse
-                per_page = 100
-                
-        except (ValueError, TypeError):
-            # Handle invalid pagination parameters
-            page = 1
-            per_page = 20
 
-        try:
-            # Apply default sorting and pagination
-            paginated_orders = query.order_by(FuelOrder.created_at.desc()).paginate(
-                page=page,
-                per_page=per_page,
-                error_out=False
-            )
-            return paginated_orders, "Orders retrieved successfully"
-            
+            try:
+                paginated_orders = query.order_by(FuelOrder.created_at.desc()).paginate(
+                    page=page,
+                    per_page=per_page,
+                    error_out=False
+                )
+                return paginated_orders, "Orders retrieved successfully"
+            except Exception as e:
+                current_app.logger.error(f"Error retrieving fuel orders: {str(e)}")
+                return None, f"Database error while retrieving orders: {str(e)}"
         except Exception as e:
-            current_app.logger.error(f"Error retrieving fuel orders: {str(e)}")
-            return None, f"Database error while retrieving orders: {str(e)}"
+            logger.error(f"Unhandled exception in FuelOrderService.get_fuel_orders: {str(e)}\n{traceback.format_exc()}")
+            return None, f"An internal server error occurred in FuelOrderService.get_fuel_orders: {str(e)}"
 
     @classmethod
     def get_fuel_order_by_id(

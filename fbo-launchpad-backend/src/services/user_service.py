@@ -26,7 +26,7 @@ class UserService:
         """
         try:
             # Initialize base query with eager loading of roles
-            query = User.query.options(db.selectinload(User.roles))
+            query = User.query
 
             if filters:
                 # Filter by role IDs
@@ -133,7 +133,7 @@ class UserService:
                 - HTTP status code
         """
         try:
-            user = User.query.options(db.selectinload(User.roles)).get(user_id)
+            user = User.query.get(user_id)
             if not user:
                 return None, f"User with ID {user_id} not found", 404
 
@@ -210,7 +210,7 @@ class UserService:
                 - HTTP status code
         """
         try:
-            user = User.query.options(db.selectinload(User.roles)).get(user_id)
+            user = User.query.get(user_id)
             if not user:
                 return None, f"User with ID {user_id} not found", 404
             return user, "User retrieved successfully", 200

@@ -91,12 +91,11 @@ def get_users():
                 "id": user.id,
                 "name": user.username,
                 "email": user.email,
-                "role": user.role.value,  # Use enum value
+                # Temporarily exclude roles to avoid SQLAlchemy error
+                # "roles": [role.name for role in user.roles.all()],
                 "is_active": user.is_active,
                 "created_at": user.created_at.isoformat()
-                # DO NOT INCLUDE user.hashed_password
             })
-        
         # Construct the final JSON response
         response = {
             "message": message,

@@ -5,6 +5,7 @@ from ..utils.decorators import token_required, require_permission
 from ..models.user import UserRole
 from ..models.fuel_order import FuelOrder, FuelOrderStatus
 from ..services.fuel_order_service import FuelOrderService
+from ..models.fuel_truck import FuelTruck
 from ..schemas import OrderStatusCountsResponseSchema, ErrorResponseSchema
 from ..extensions import db
 
@@ -13,39 +14,24 @@ fuel_order_bp = Blueprint('fuel_order_bp', __name__)
 
 # Special value for auto-assigning LST
 AUTO_ASSIGN_LST_ID = -1  # If this value is provided, backend will auto-select least busy LST
+AUTO_ASSIGN_TRUCK_ID = -1 # If this value is provided, backend will auto-select an available truck
 
-@fuel_order_bp.route('/stats/status-counts', methods=['GET'])
+@fuel_order_bp.route('/stats/status-counts', methods=['GET', 'OPTIONS'])
+@fuel_order_bp.route('/stats/status-counts/', methods=['GET', 'OPTIONS'])
 @token_required
 @require_permission('VIEW_ORDER_STATS')
 def get_status_counts():
-    """Get counts of fuel orders by status groups.
-    Requires VIEW_ORDER_STATS permission. Returns counts for Pending, In Progress, Completed.
-    ---
-    tags:
-      - Fuel Orders Stats
-    security:
-      - bearerAuth: []
-    responses:
-      200:
-        description: Status counts retrieved successfully
-        content:
-          application/json:
-            schema: OrderStatusCountsResponseSchema
-      401:
-        description: Unauthorized
-      403:
-        description: Forbidden
-      500:
-        description: Server error
-        content:
-          application/json:
-            schema: ErrorResponseSchema
-    """
-    counts, message, status_code = FuelOrderService.get_status_counts(current_user=g.current_user)
-    if counts is not None:
-        return jsonify({"message": message, "counts": counts}), status_code
-    else:
-        return jsonify({"error": message}), status_code
+    if request.method == 'OPTIONS':
+        return jsonify({'message': 'OPTIONS request successful'}), 200
+    try:
+        counts, message, status_code = FuelOrderService.get_status_counts(current_user=g.current_user)
+        if counts is not None:
+            return jsonify({"message": message, "counts": counts}), status_code
+        else:
+            return jsonify({"error": message}), status_code
+    except Exception as e:
+        current_app.logger.error(f"Unhandled exception in get_status_counts: {str(e)}")
+        return jsonify({"error": "Internal server error in get_status_counts.", "details": str(e)}), 500
 
 
 @fuel_order_bp.route('', methods=['POST', 'OPTIONS'])
@@ -110,31 +96,56 @@ def create_fuel_order():
     if not data or not isinstance(data, dict):
         return jsonify({"error": "Invalid request data"}), 400
     
-    # Required fields validation
-    required_fields = {
+    # Required fields validation (modified for assigned_truck_id and requested_amount)
+    base_required_fields = {
         'tail_number': str,
         'fuel_type': str,
         'assigned_lst_user_id': int,
         'assigned_truck_id': int,
-        'requested_amount': float,
+        # 'requested_amount': float, # Handled separately for robust conversion
         'location_on_ramp': str
     }
-    for field, field_type in required_fields.items():
+
+    # Validate requested_amount separately for robust conversion
+    if 'requested_amount' not in data:
+        logger.error('Step 2.1: Missing required field: requested_amount')
+        return jsonify({"error": "Missing required field: requested_amount"}), 400
+    try:
+        data['requested_amount'] = float(data['requested_amount'])
+        if data['requested_amount'] <= 0: # Assuming requested amount must be positive
+             logger.error('Step 2.1: Invalid value for requested_amount: must be positive')
+             return jsonify({"error": "Invalid value for requested_amount: must be a positive number"}), 400
+    except (ValueError, TypeError):
+        logger.error('Step 2.1: Invalid type or value for requested_amount. Value: %s', data.get('requested_amount'))
+        return jsonify({"error": "Invalid type for field: requested_amount (must be a valid number)"}), 400
+
+    for field, field_type in base_required_fields.items():
         if field not in data:
             logger.error('Step 2.1: Missing required field: %s', field)
             return jsonify({"error": f"Missing required field: {field}"}), 400
-        # Type check (allow -1 for assigned_lst_user_id)
         if field == 'assigned_lst_user_id':
             try:
                 data[field] = int(data[field])
+                if data[field] != AUTO_ASSIGN_LST_ID and data[field] <= 0: # Assuming positive IDs or -1
+                    return jsonify({"error": f"Invalid ID for field: {field}"}), 400
             except Exception:
-                return jsonify({"error": f"Invalid type for field: {field} (must be integer or -1)"}), 400
+                return jsonify({"error": f"Invalid type for field: {field} (must be integer or {AUTO_ASSIGN_LST_ID})"}), 400
+        elif field == 'assigned_truck_id':
+            try:
+                data[field] = int(data[field])
+                if data[field] != AUTO_ASSIGN_TRUCK_ID and data[field] <= 0: # Assuming positive IDs or -1
+                    return jsonify({"error": f"Invalid ID for field: {field}"}), 400
+            except Exception:
+                return jsonify({"error": f"Invalid type for field: {field} (must be integer or {AUTO_ASSIGN_TRUCK_ID})"}), 400
         else:
+            # For other fields, ensure they are of the expected type and not empty if string
             if not isinstance(data[field], field_type):
                 return jsonify({"error": f"Invalid type for field: {field}"}), 400
+            if field_type == str and not data[field].strip():
+                 return jsonify({"error": f"Field {field} cannot be empty"}), 400
 
-    # Only run auto-assignment if assigned_lst_user_id == -1
-    if data['assigned_lst_user_id'] == -1:
+    # LST Auto-assignment
+    if data['assigned_lst_user_id'] == AUTO_ASSIGN_LST_ID:
         try:
             from src.services.user_service import UserService
             from src.models.user import UserRole
@@ -167,7 +178,26 @@ def create_fuel_order():
         except Exception as e:
             logger.error(f"Error during auto-assignment of LST: {str(e)}")
             return jsonify({"error": f"Error during auto-assignment of LST: {str(e)}"}), 500
-    # --- END AUTO-ASSIGN ---
+    # --- END LST AUTO-ASSIGN ---
+
+    # Truck Auto-assignment
+    if data['assigned_truck_id'] == AUTO_ASSIGN_TRUCK_ID:
+        try:
+            # Get all active FuelTrucks
+            # For simplicity, picking the first active one.
+            # Future enhancement: more sophisticated selection logic (e.g., fuel type compatibility, availability)
+            active_truck = FuelTruck.query.filter(FuelTruck.is_active == True).first()
+            
+            if not active_truck:
+                logger.error('No active FuelTrucks found for auto-assignment')
+                return jsonify({"error": "No active FuelTrucks available for auto-assignment"}), 400
+            
+            data['assigned_truck_id'] = active_truck.id
+            logger.info(f"Auto-assigned FuelTruck ID {active_truck.id} (Name: {active_truck.name if hasattr(active_truck, 'name') else 'N/A'}).")
+        except Exception as e:
+            logger.error(f"Error during auto-assignment of FuelTruck: {str(e)}")
+            return jsonify({"error": f"Error during auto-assignment of FuelTruck: {str(e)}"}), 500
+    # --- END TRUCK AUTO-ASSIGN ---
 
     # Optional fields validation
     optional_fields = {
@@ -235,126 +265,55 @@ def create_fuel_order():
         logger.exception("Exception in create_fuel_order")
         return jsonify({"error": f"Error creating fuel order: {str(e)}"}), 500
 
+@fuel_order_bp.route('', methods=['GET'])
 @fuel_order_bp.route('/', methods=['GET'])
 @token_required
 def get_fuel_orders():
-    """Get a list of fuel orders.
-    LSTs see only their assigned orders. CSRs/Admins see all. Supports filtering and pagination.
-    ---
-    tags:
-      - Fuel Orders
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: query
-        name: status
-        schema:
-          type: string
-          enum: [DISPATCHED, ACKNOWLEDGED, EN_ROUTE, FUELING, COMPLETED, REVIEWED, CANCELLED]
-        required: false
-        description: Filter orders by status (case-insensitive)
-      - in: query
-        name: page
-        schema:
-          type: integer
-          default: 1
-        required: false
-        description: Page number for pagination
-      - in: query
-        name: per_page
-        schema:
-          type: integer
-          default: 20
-        required: false
-        description: Number of items per page (max 100)
-    responses:
-      200:
-        description: List of fuel orders retrieved successfully
-        content:
-          application/json:
-            schema: FuelOrderListResponseSchema
-      400:
-        description: Bad Request (e.g., invalid status filter value)
-        content:
-          application/json:
-            schema: ErrorResponseSchema
-      401:
-        description: Unauthorized (invalid/missing token)
-        content:
-          application/json:
-            schema: ErrorResponseSchema
-      500:
-        description: Server error (e.g., database error)
-        content:
-          application/json:
-            schema: ErrorResponseSchema
-    """
-    # Extract and validate filter/pagination parameters
-    filters = {
-        'status': request.args.get('status', None, type=str),
-        'page': request.args.get('page', 1, type=int),
-        'per_page': request.args.get('per_page', 20, type=int)
-        # Add other potential filters here later (e.g., date_from, date_to, tail_number)
-    }
-
-    # Basic validation/sanitization
-    if filters['page'] < 1: filters['page'] = 1
-    if filters['per_page'] < 1: filters['per_page'] = 1
-    if filters['per_page'] > 100: filters['per_page'] = 100  # Match service limit
-
-    # Call service method with current user and filters
-    paginated_result, message = FuelOrderService.get_fuel_orders(
-        current_user=g.current_user,
-        filters=filters
-    )
-
-    # Handle the result
-    if paginated_result is not None:
-        # Serialize the orders
-        orders_list = []
-        for order in paginated_result.items:
-            orders_list.append({
-                "id": order.id,
-                "status": order.status.value,
-                "tail_number": order.tail_number,
-                "customer_id": order.customer_id,
-                "fuel_type": order.fuel_type,
-                "additive_requested": order.additive_requested,
-                "requested_amount": str(order.requested_amount) if order.requested_amount else None,
-                "assigned_lst_user_id": order.assigned_lst_user_id,
-                "assigned_truck_id": order.assigned_truck_id,
-                "location_on_ramp": order.location_on_ramp,
-                "start_meter_reading": str(order.start_meter_reading) if order.start_meter_reading else None,
-                "end_meter_reading": str(order.end_meter_reading) if order.end_meter_reading else None,
-                "calculated_gallons_dispensed": str(order.calculated_gallons_dispensed) if order.calculated_gallons_dispensed else None,
-                "created_at": order.created_at.isoformat(),
-                "dispatch_timestamp": order.dispatch_timestamp.isoformat() if order.dispatch_timestamp else None,
-                "acknowledge_timestamp": order.acknowledge_timestamp.isoformat() if order.acknowledge_timestamp else None,
-                "en_route_timestamp": order.en_route_timestamp.isoformat() if order.en_route_timestamp else None,
-                "fueling_start_timestamp": order.fueling_start_timestamp.isoformat() if order.fueling_start_timestamp else None,
-                "completion_timestamp": order.completion_timestamp.isoformat() if order.completion_timestamp else None,
-                "reviewed_timestamp": order.reviewed_timestamp.isoformat() if order.reviewed_timestamp else None,
-                "reviewed_by_csr_user_id": order.reviewed_by_csr_user_id
-            })
-
-        # Construct response with orders and pagination metadata
-        response = {
-            "message": message,
-            "fuel_orders": orders_list,
-            "pagination": {
-                "page": paginated_result.page,
-                "per_page": paginated_result.per_page,
-                "total_pages": paginated_result.pages,
-                "total_items": paginated_result.total,
-                "has_next": paginated_result.has_next,
-                "has_prev": paginated_result.has_prev
+    import traceback
+    try:
+        current_app.logger.info(f"[get_fuel_orders] User: {getattr(g, 'current_user', None)} | Args: {request.args}")
+        from src.services.fuel_order_service import FuelOrderService
+        filters = dict(request.args)
+        paginated_result, message = FuelOrderService.get_fuel_orders(current_user=g.current_user, filters=filters)
+        if paginated_result is not None:
+            orders_list = []
+            for order in paginated_result.items:
+                # Use a custom to_dict if available, else fallback to basic fields
+                if hasattr(order, 'to_dict'):
+                    orders_list.append(order.to_dict())
+                else:
+                    orders_list.append({
+                        'id': order.id,
+                        'tail_number': order.tail_number,
+                        'customer_id': order.customer_id,
+                        'fuel_type': order.fuel_type,
+                        'additive_requested': order.additive_requested,
+                        'requested_amount': str(order.requested_amount) if order.requested_amount else None,
+                        'assigned_lst_user_id': order.assigned_lst_user_id,
+                        'assigned_truck_id': order.assigned_truck_id,
+                        'location_on_ramp': order.location_on_ramp,
+                        'csr_notes': order.csr_notes,
+                        'status': order.status.value,
+                        'created_at': order.created_at.isoformat() if order.created_at else None
+                    })
+            response = {
+                "orders": orders_list,
+                "message": message,
+                "pagination": {
+                    "page": paginated_result.page,
+                    "per_page": paginated_result.per_page,
+                    "total": paginated_result.total,
+                    "pages": paginated_result.pages,
+                    "has_next": paginated_result.has_next,
+                    "has_prev": paginated_result.has_prev
+                }
             }
-        }
-        return jsonify(response), 200
-    else:
-        # Handle error cases
-        status_code = 500 if "Database error" in message else (403 if "Forbidden" in message else 400)
-        return jsonify({"error": message}), status_code 
+            return jsonify(response), 200
+        else:
+            return jsonify({"error": message}), 400
+    except Exception as e:
+        current_app.logger.error(f"Unhandled exception in get_fuel_orders route: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({"error": "An internal server error occurred in get_fuel_orders route.", "details": str(e)}), 500
 
 @fuel_order_bp.route('/<int:order_id>', methods=['GET'])
 @token_required

@@ -7,13 +7,18 @@ class AircraftService:
     def create_aircraft(data: Dict[str, Any]) -> Tuple[Optional[Aircraft], str, int]:
         if 'tail_number' not in data:
             return None, "Missing required field: tail_number", 400
+        if 'aircraft_type' not in data:
+            return None, "Missing required field: aircraft_type", 400
+        if 'fuel_type' not in data:
+            return None, "Missing required field: fuel_type", 400
+            
         if Aircraft.query.filter_by(tail_number=data['tail_number']).first():
             return None, "Aircraft with this tail number already exists", 409
         try:
             aircraft = Aircraft(
                 tail_number=data['tail_number'],
-                aircraft_type=data.get('aircraft_type'),
-                customer_id=data.get('customer_id')
+                aircraft_type=data['aircraft_type'],
+                fuel_type=data['fuel_type']
             )
             db.session.add(aircraft)
             db.session.commit()
