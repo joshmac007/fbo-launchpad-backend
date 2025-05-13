@@ -8,7 +8,7 @@ class RoleBriefSchema(Schema):
 class UserCreateRequestSchema(Schema):
     """Schema for user creation requests."""
     email = fields.Email(required=True)
-    password = fields.String(required=True, load_only=True, validate=validate.Length(min=8))
+    password = fields.String(required=True, load_only=True, validate=validate.Length(min=6))
     role_ids = fields.List(fields.Integer(), required=True)
     name = fields.String(required=False)
     is_active = fields.Boolean(required=False)
@@ -18,7 +18,7 @@ class UserUpdateRequestSchema(Schema):
     name = fields.String(required=False)
     role_ids = fields.List(fields.Integer(), required=False)
     is_active = fields.Boolean(required=False)
-    password = fields.String(required=False, load_only=True, validate=validate.Length(min=8))
+    password = fields.String(required=False, load_only=True, validate=validate.Length(min=6))
 
 class UserBriefSchema(Schema):
     """Brief schema for user information in list responses."""

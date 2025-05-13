@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { getUsers } from '../services/UserService';
 import { getFuelTrucks } from '../services/FuelTruckService';
 import { createFuelOrder } from '../services/FuelOrderService';
+import { useAuth } from '../contexts/AuthContext';
 
 function OrderCreatePage() {
   const [autoAssignEnabled, setAutoAssignEnabled] = useState(true); // Global admin setting
   const [autoAssign, setAutoAssign] = useState(true); // Per-order toggle (only if enabled)
-  const [settingLoading, setSettingLoading] = useState(true);
+  const [settingLoading, setSettingLoading] = useState(false);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     tail_number: '',
@@ -27,8 +28,10 @@ function OrderCreatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const { isAuthenticated, hasPermission } = useAuth();
 
   // Fetch global assignment setting on mount
+  /*
   useEffect(() => {
     async function fetchSetting() {
       setSettingLoading(true);
@@ -44,6 +47,7 @@ function OrderCreatePage() {
     }
     fetchSetting();
   }, []);
+  */
 
   // Fetch LSTs and Trucks on mount
     const loadDropdownData = async () => {
@@ -51,8 +55,8 @@ function OrderCreatePage() {
       setError(null);
       try {
         const [lstData, truckData] = await Promise.all([
-          getUsers({ is_active: 'true' }),
-          getFuelTrucks({ is_active: 'true' })
+          getUsers(),
+          getFuelTrucks()
         ]);
         setLsts(lstData);
         setTrucks(truckData);
@@ -106,8 +110,17 @@ function OrderCreatePage() {
       // by the (hidden) dropdown.
       // For the purpose of this fix, we'll parse what's there or default to null,
       // highlighting that backend needs a truck ID.
-      finalAssignedTruckId = formData.assigned_truck_id ? parseInt(formData.assigned_truck_id, 10) : null;
-      if (isNaN(finalAssignedTruckId)) finalAssignedTruckId = null; // Ensure it's null if parsing failed
+      // finalAssignedTruckId = formData.assigned_truck_id ? parseInt(formData.assigned_truck_id, 10) : null;
+      // if (isNaN(finalAssignedTruckId)) finalAssignedTruckId = null; // Ensure it's null if parsing failed
+
+      // If auto-assigning LST, assign the first available truck if trucks list is not empty.
+      // This addresses the issue where assigned_truck_id was null when autoAssign is true.
+      if (trucks.length > 0) {
+        finalAssignedTruckId = trucks[0].id;
+      } else {
+        // No trucks available, so it will remain null and caught by later validation if not desired.
+        finalAssignedTruckId = null;
+      }
 
       // A better approach for autoAssign would be if backend can take a special value for truck_id too,
       // or if frontend explicitly assigns a default truck when auto-assigning LST.
@@ -313,7 +326,7 @@ function OrderCreatePage() {
               <option value="">Select Truck...</option>
               {trucks.map(truck => (
                 <option key={truck.id} value={truck.id}>
-                  {truck.name} (ID: {truck.id})
+                  {truck.truck_number} (ID: {truck.id})
                 </option>
               ))}
             </select>
@@ -394,17 +407,15 @@ function OrderCreatePage() {
         )}
 
         {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isSubmitting || isLoadingData}
-          className={`w-full p-2 text-white rounded ${
-            isSubmitting || isLoadingData
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-        >
-          {isSubmitting ? 'Creating Order...' : 'Create Fuel Order'}
-        </button>
+        {isAuthenticated && hasPermission('CREATE_ORDER') && (
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={isSubmitting || isLoadingData}
+          >
+            {isSubmitting ? 'Submitting...' : 'Submit Order'}
+          </button>
+        )}
       </form>
     </div>
   );

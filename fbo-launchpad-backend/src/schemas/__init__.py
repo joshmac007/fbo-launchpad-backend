@@ -1,6 +1,7 @@
 from .auth_schemas import (
     RegisterRequestSchema, UserResponseSchema, RegisterResponseSchema,
-    LoginRequestSchema, LoginSuccessResponseSchema, ErrorResponseSchema
+    LoginRequestSchema, LoginSuccessResponseSchema,
+    UserPermissionsResponseSchema
 )
 
 from .fuel_order_schemas import (
@@ -29,41 +30,20 @@ from .role_schemas import (
 
 from .permission_schemas import PermissionSchema
 
+from .user_schemas import (
+    UserCreateRequestSchema,
+    UserUpdateRequestSchema,
+    UserDetailSchema,
+    UserListResponseSchema,
+    ErrorResponseSchema
+)
+
 from marshmallow import Schema, fields, validate
-
-class ErrorResponseSchema(Schema):
-    error = fields.String(required=True)
-    details = fields.Dict(keys=fields.String(), values=fields.List(fields.String()), required=False)
-
-class UserBaseSchema(Schema):
-    id = fields.Integer(dump_only=True)
-    name = fields.String(required=False)
-    email = fields.Email(required=True)
-    role = fields.String(required=True, validate=validate.OneOf(['ADMIN', 'CSR', 'LST']))
-    is_active = fields.Boolean(dump_only=True)
-    created_at = fields.DateTime(dump_only=True)
-
-class UserCreateRequestSchema(UserBaseSchema):
-    password = fields.String(required=True, load_only=True)
-    is_active = fields.Boolean(required=False, load_only=True)
-
-class UserUpdateRequestSchema(Schema):
-    name = fields.String(required=False)
-    role = fields.String(required=False, validate=validate.OneOf(['ADMIN', 'CSR', 'LST']))
-    is_active = fields.Boolean(required=False)
-    password = fields.String(required=False, load_only=True)
-
-class UserResponseSchema(Schema):
-    message = fields.String(required=True)
-    user = fields.Nested(UserBaseSchema)
-
-class UserListResponseSchema(Schema):
-    message = fields.String(required=True)
-    users = fields.List(fields.Nested(UserBaseSchema), required=True)
 
 __all__ = [
     'RegisterRequestSchema', 'UserResponseSchema', 'RegisterResponseSchema',
-    'LoginRequestSchema', 'LoginSuccessResponseSchema', 'ErrorResponseSchema',
+    'LoginRequestSchema', 'LoginSuccessResponseSchema',
+    'UserPermissionsResponseSchema',
     'FuelOrderCreateRequestSchema', 'FuelOrderStatusUpdateRequestSchema',
     'FuelOrderCompleteRequestSchema', 'FuelOrderResponseSchema',
     'FuelOrderBriefResponseSchema', 'FuelOrderCreateResponseSchema',
@@ -71,10 +51,11 @@ __all__ = [
     'FuelTruckSchema', 'FuelTruckListResponseSchema',
     'FuelTruckCreateRequestSchema',
     'FuelTruckCreateResponseSchema',
-    'UserBaseSchema',
     'UserCreateRequestSchema',
     'UserUpdateRequestSchema',
+    'UserDetailSchema',
     'UserListResponseSchema',
+    'ErrorResponseSchema',
     'OrderStatusCountsSchema', 'OrderStatusCountsResponseSchema',
     'AdminAircraftSchema', 'AdminAircraftListResponseSchema',
     'AdminCustomerSchema', 'AdminCustomerListResponseSchema',

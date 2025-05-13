@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { loginUser, logoutUser, getStoredToken } from '../services/authService';
+import { loginUser, logoutUser, getStoredToken, getMyPermissions } from '../services/authService';
 import { decodeJWT } from '../utils/jwt';
 
 export const AuthContext = createContext(null);
@@ -8,26 +8,46 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [permissions, setPermissions] = useState([]);
+
+  const fetchUserPermissions = async () => {
+    const token = getStoredToken();
+    if (!token) {
+      setPermissions([]);
+      return;
+    }
+    try {
+      const fetchedPermissions = await getMyPermissions();
+      setPermissions(fetchedPermissions);
+    } catch (error) {
+      console.error('AuthContext: Failed to fetch permissions', error);
+      setPermissions([]);
+    }
+  };
 
   useEffect(() => {
-    const token = getStoredToken();
-    if (token) {
-      const decoded = decodeJWT(token);
-      if (decoded) {
-        setIsAuthenticated(true);
-        // Store all user data from JWT without filtering specific fields
-        setUser(decoded);
+    const initializeAuth = async () => {
+      const token = getStoredToken();
+      if (token) {
+        const decoded = decodeJWT(token);
+        if (decoded) {
+          setIsAuthenticated(true);
+          setUser(decoded);
+          await fetchUserPermissions();
+        } else {
+          logoutUser();
+          setIsAuthenticated(false);
+          setUser(null);
+          setPermissions([]);
+        }
       } else {
-        // Invalid token, force logout
-        logoutUser();
         setIsAuthenticated(false);
         setUser(null);
+        setPermissions([]);
       }
-    } else {
-      setIsAuthenticated(false);
-      setUser(null);
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+    initializeAuth();
   }, []);
 
   const login = async (email, password) => {
@@ -36,13 +56,14 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       const decoded = decodeJWT(data.token);
       if (decoded) {
-        // Store all user data from JWT without filtering
         setUser(decoded);
       } else {
         setUser(null);
       }
+      await fetchUserPermissions();
       return data;
     } catch (error) {
+      setPermissions([]);
       throw error;
     }
   };
@@ -51,6 +72,12 @@ export const AuthProvider = ({ children }) => {
     logoutUser();
     setIsAuthenticated(false);
     setUser(null);
+    setPermissions([]);
+  };
+
+  const hasPermission = (permissionName) => {
+    if (loading) return false;
+    return permissions.includes(permissionName);
   };
 
   if (loading) {
@@ -63,7 +90,9 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         user,
         login,
-        logout
+        logout,
+        permissions,
+        hasPermission
       }}
     >
       {children}

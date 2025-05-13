@@ -1,6 +1,7 @@
 import React from 'react';
 import { DarkModeProvider } from './context/DarkModeContext';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
@@ -16,38 +17,43 @@ import CustomerManagementPage from './pages/admin/CustomerManagementPage';
 import RoleManagementPage from './pages/admin/RoleManagementPage';
 import PermissionListPage from './pages/admin/PermissionListPage';
 
+console.log('App: module loaded');
+
 function App() {
+  console.log('App: rendering');
   return (
     <DarkModeProvider>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/login" element={<LoginPage />} />
+      <AuthProvider>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<LoginPage />} />
 
-          {/* Protected Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/orders/new" element={<OrderCreatePage />} />
-              <Route path="/orders/:orderId" element={<OrderDetailPage />} />
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<MainLayout />}>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/orders/new" element={<OrderCreatePage />} />
+                <Route path="/orders/:orderId" element={<OrderDetailPage />} />
+              </Route>
+
+              {/* Admin Section - Protected by backend permissions */}
+              <Route element={<AdminLayout />}>
+                <Route path="/admin/trucks" element={<TruckManagementPage />} />
+                <Route path="/admin/users" element={<UserManagementPage />} />
+                <Route path="/admin/aircraft" element={<AircraftManagementPage />} />
+                <Route path="/admin/customers" element={<CustomerManagementPage />} />
+                <Route path="/admin/roles" element={<RoleManagementPage />} />
+                <Route path="/admin/permissions" element={<PermissionListPage />} />
+                <Route path="/admin" element={<Navigate to="/admin/trucks" replace />} />
+              </Route>
             </Route>
 
-            {/* Admin Section - Protected by backend permissions */}
-            <Route element={<AdminLayout />}>
-              <Route path="/admin/trucks" element={<TruckManagementPage />} />
-              <Route path="/admin/users" element={<UserManagementPage />} />
-              <Route path="/admin/aircraft" element={<AircraftManagementPage />} />
-              <Route path="/admin/customers" element={<CustomerManagementPage />} />
-              <Route path="/admin/roles" element={<RoleManagementPage />} />
-              <Route path="/admin/permissions" element={<PermissionListPage />} />
-              <Route path="/admin" element={<Navigate to="/admin/trucks" replace />} />
-            </Route>
-          </Route>
-
-          {/* 404 catch-all route */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </div>
+            {/* 404 catch-all route */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </div>
+      </AuthProvider>
     </DarkModeProvider>
   );
 }

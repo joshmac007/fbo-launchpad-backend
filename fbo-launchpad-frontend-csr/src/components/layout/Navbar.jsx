@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import DarkModeToggle from '../common/DarkModeToggle';
 
 const Navbar = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated, hasPermission } = useAuth();
   return (
     <nav className="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm h-16 flex items-center justify-between px-6 z-50">
       <div className="flex items-center gap-2">
@@ -14,12 +14,14 @@ const Navbar = () => {
           FBO LaunchPad
         </span>
         {/* Admin link will be shown but protected by backend permissions */}
-        <Link
-          to="/admin/trucks"
-          className="ml-6 px-3 py-1 rounded text-blue-700 dark:text-yellow-200 bg-blue-100 dark:bg-gray-700 hover:bg-blue-200 dark:hover:bg-gray-600 text-sm font-medium"
-        >
-          Admin
-        </Link>
+        {isAuthenticated && hasPermission('MANAGE_USERS') && (
+          <Link
+            to="/admin/trucks"
+            className="ml-6 px-3 py-1 rounded text-blue-700 dark:text-yellow-200 bg-blue-100 dark:bg-gray-700 hover:bg-blue-200 dark:hover:bg-gray-600 text-sm font-medium"
+          >
+            Admin
+          </Link>
+        )}
       </div>
       <div className="flex items-center gap-6">
         {/* Notification Icon */}

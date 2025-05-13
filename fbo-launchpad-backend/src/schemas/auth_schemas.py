@@ -33,4 +33,9 @@ class LoginSuccessResponseSchema(Schema):
 class ErrorResponseSchema(Schema):
     """Schema for error responses"""
     error = fields.String(required=True)
-    details = fields.Dict(keys=fields.String(), values=fields.Raw(), required=False) 
+    details = fields.Dict(keys=fields.String(), values=fields.Raw(), required=False)
+
+# --- New schema for user permissions response ---
+class UserPermissionsResponseSchema(Schema):
+    message = fields.Str(dump_only=True)
+    permissions = fields.List(fields.Str(), dump_only=True) 

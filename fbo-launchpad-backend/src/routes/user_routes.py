@@ -91,8 +91,7 @@ def get_users():
                 "id": user.id,
                 "name": user.username,
                 "email": user.email,
-                # Temporarily exclude roles to avoid SQLAlchemy error
-                # "roles": [role.name for role in user.roles.all()],
+                "roles": [role.name for role in user.roles],
                 "is_active": user.is_active,
                 "created_at": user.created_at.isoformat()
             })
@@ -165,6 +164,11 @@ def create_user():
         
         if not data:
             return jsonify({"error": "No data provided"}), 400
+        
+        # --- Remove Debugging ---    
+        # from flask import current_app
+        # current_app.logger.info(f"DEBUG: Schema fields before load: {schema.fields}") 
+        # --- End Debugging ---
             
         try:
             data = schema.load(data)
@@ -185,7 +189,7 @@ def create_user():
                     "id": user.id,
                     "name": user.username,
                     "email": user.email,
-                    "role": user.role.value,
+                    "roles": [role.name for role in user.roles],
                     "is_active": user.is_active,
                     "created_at": user.created_at.isoformat()
                 }
@@ -281,7 +285,7 @@ def update_user(user_id):
                     "id": user.id,
                     "name": user.username,
                     "email": user.email,
-                    "role": user.role.value,
+                    "roles": [role.name for role in user.roles],
                     "is_active": user.is_active,
                     "created_at": user.created_at.isoformat()
                 }
@@ -388,7 +392,7 @@ def get_user(user_id):
                 "id": user.id,
                 "name": user.username,
                 "email": user.email,
-                "role": user.role.value,
+                "roles": [role.name for role in user.roles],
                 "is_active": user.is_active,
                 "created_at": user.created_at.isoformat()
             }

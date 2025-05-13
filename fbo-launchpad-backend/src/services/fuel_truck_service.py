@@ -17,6 +17,10 @@ class FuelTruckService:
                 query = query.filter(FuelTruck.is_active == is_active_bool)
         try:
             trucks = query.order_by(FuelTruck.truck_number.asc()).all()
+            # --- Add Debugging ---
+            from flask import current_app
+            current_app.logger.info(f"DEBUG: FuelTruckService.get_trucks found {len(trucks)} trucks: {trucks}")
+            # --- End Debugging ---
             return trucks, "Fuel trucks retrieved successfully", 200
         except Exception as e:
             return None, f"Database error while retrieving fuel trucks: {str(e)}", 500

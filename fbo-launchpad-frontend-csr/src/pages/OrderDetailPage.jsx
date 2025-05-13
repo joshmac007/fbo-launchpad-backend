@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getFuelOrderById, reviewFuelOrder } from '../services/FuelOrderService';
 import { formatDisplayValue } from '../utils/formatters';
+import { useAuth } from '../contexts/AuthContext';
 
 const OrderDetailPage = () => {
   const { orderId } = useParams();
@@ -10,6 +11,7 @@ const OrderDetailPage = () => {
   const [error, setError] = useState(null);
   const [isReviewing, setIsReviewing] = useState(false);
   const [reviewError, setReviewError] = useState(null);
+  const { isAuthenticated, hasPermission } = useAuth();
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -100,13 +102,15 @@ const OrderDetailPage = () => {
 
       {order.status === 'COMPLETED' && (
         <div className="order-actions">
-          <button
-            onClick={handleMarkAsReviewed}
-            disabled={isReviewing}
-            className="review-button"
-          >
-            {isReviewing ? 'Reviewing...' : 'Mark as Reviewed'}
-          </button>
+          {isAuthenticated && hasPermission('MARK_ORDER_REVIEWED') && (
+            <button
+              onClick={handleMarkAsReviewed}
+              disabled={isReviewing}
+              className="review-button"
+            >
+              {isReviewing ? 'Reviewing...' : 'Mark as Reviewed'}
+            </button>
+          )}
           {reviewError && (
             <p className="error-message">Error: {reviewError}</p>
           )}

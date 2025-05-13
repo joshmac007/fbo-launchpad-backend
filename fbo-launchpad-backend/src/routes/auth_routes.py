@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, g
 from ..services.auth_service import AuthService
 from flask_jwt_extended import create_access_token
 from ..schemas import (
@@ -6,7 +6,8 @@ from ..schemas import (
     RegisterResponseSchema,
     LoginRequestSchema,
     LoginSuccessResponseSchema,
-    ErrorResponseSchema
+    ErrorResponseSchema,
+    UserPermissionsResponseSchema
 )
 from ..models.user import User
 from ..models.role import Role
@@ -17,6 +18,8 @@ import time
 from datetime import datetime, timedelta
 import jwt as pyjwt
 from src.utils.rate_limiting import rate_limit
+from flask import g
+from ..utils.decorators import token_required
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -186,3 +189,40 @@ def login():
             'error': 'Internal server error',
             'details': str(e)
         }), 500 
+
+@auth_bp.route('/me/permissions', methods=['GET'])
+@token_required
+def get_my_permissions():
+    """Get the effective permissions for the currently authenticated user.
+    ---
+    tags:
+      - Authentication
+    security:
+      - bearerAuth: []
+    responses:
+      200:
+        description: List of effective permission strings for the user.
+        content:
+          application/json:
+            schema: UserPermissionsResponseSchema
+      401:
+        description: Unauthorized (invalid/missing token)
+        content:
+          application/json:
+            schema: ErrorResponseSchema
+      500:
+        description: Server error while retrieving permissions
+        content:
+          application/json:
+            schema: ErrorResponseSchema
+    """
+    current_user = g.current_user
+    permissions, message, status_code = AuthService.get_user_effective_permissions(current_user)
+    if permissions is not None:
+        result = UserPermissionsResponseSchema().dump({
+            "message": message,
+            "permissions": permissions
+        })
+        return jsonify(result), status_code
+    else:
+        return jsonify({"error": message}), status_code 

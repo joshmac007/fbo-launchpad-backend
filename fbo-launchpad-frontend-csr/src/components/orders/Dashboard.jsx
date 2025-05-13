@@ -4,6 +4,7 @@ import FuelOrdersTable from "./FuelOrdersTable";
 import RecentReceipts from "../dashboard/RecentReceipts";
 import PaginationControls from "../common/PaginationControls";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 
 
@@ -23,6 +24,7 @@ const Dashboard = () => {
   const [error] = useState(null);
   const [receipts] = useState([]);
   const navigate = useNavigate();
+  const { isAuthenticated, hasPermission } = useAuth();
 
   const filteredOrders = activeTab === "all"
     ? orders
@@ -67,8 +69,12 @@ const Dashboard = () => {
             <p className="text-sm text-gray-500">Manage and track fuel orders</p>
           </div>
           <div className="flex gap-2 mt-2 md:mt-0">
-            <button className="px-3 py-1 bg-gray-100 border border-gray-200 rounded text-gray-700 text-sm font-medium hover:bg-gray-200">Export</button>
-            <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700" onClick={() => navigate('/orders/new')}>New Order</button>
+            {isAuthenticated && hasPermission('EXPORT_ORDERS') && (
+              <button className="px-3 py-1 bg-gray-100 border border-gray-200 rounded text-gray-700 text-sm font-medium hover:bg-gray-200">Export</button>
+            )}
+            {isAuthenticated && hasPermission('CREATE_ORDER') && (
+              <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700" onClick={() => navigate('/orders/new')}>New Order</button>
+            )}
           </div>
         </div>
         {/* Tabs */}

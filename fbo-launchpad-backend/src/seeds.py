@@ -58,6 +58,7 @@ def seed_data():
         print("Clearing existing PBAC data (if any)...")
         db.session.execute(text('DELETE FROM user_roles'))
         db.session.execute(text('DELETE FROM role_permissions'))
+        db.session.execute(text('DELETE FROM fuel_orders'))
         db.session.execute(text('DELETE FROM users'))
         db.session.execute(text('DELETE FROM roles'))
         db.session.execute(text('DELETE FROM permissions'))

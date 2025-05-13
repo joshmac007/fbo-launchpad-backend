@@ -5,6 +5,7 @@ import RoleTable from '../../components/admin/RoleTable';
 import RoleForm from '../../components/admin/RoleForm';
 import RolePermissionManager from '../../components/admin/RolePermissionManager';
 import Modal from '../../components/common/Modal';
+import { useAuth } from '../../contexts/AuthContext';
 
 const RoleManagementPage = () => {
   // State
@@ -20,6 +21,8 @@ const RoleManagementPage = () => {
   const [roleFormModalOpen, setRoleFormModalOpen] = useState(false);
   const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
   const [permissionModalOpen, setPermissionModalOpen] = useState(false);
+
+  const { isAuthenticated, hasPermission } = useAuth();
 
   // Fetch roles and permissions on mount
   useEffect(() => {
@@ -154,12 +157,14 @@ const RoleManagementPage = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Role Management</h1>
-        <button
-          onClick={handleCreate}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          Create Role
-        </button>
+        {isAuthenticated && hasPermission('MANAGE_ROLES') && (
+          <button
+            onClick={handleCreate}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Create Role
+          </button>
+        )}
       </div>
 
       {error && (
@@ -170,9 +175,9 @@ const RoleManagementPage = () => {
 
       <RoleTable
         roles={roles}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onManagePermissions={handleManagePermissions}
+        onEdit={isAuthenticated && hasPermission('EDIT_ROLE') ? handleEdit : undefined}
+        onDelete={isAuthenticated && hasPermission('DELETE_ROLE') ? handleDelete : undefined}
+        onManagePermissions={isAuthenticated && hasPermission('MANAGE_ROLE_PERMISSIONS') ? handleManagePermissions : undefined}
         isLoading={isLoading}
       />
 

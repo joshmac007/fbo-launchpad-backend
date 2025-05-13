@@ -4,6 +4,7 @@ import RoleService from '../../services/RoleService';
 import UserForm from '../../components/admin/UserForm';
 import Modal from '../../components/common/Modal';
 import { FaEdit, FaTrash } from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState([]);
@@ -13,6 +14,7 @@ export default function UserManagementPage() {
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isAuthenticated, hasPermission } = useAuth();
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -83,7 +85,9 @@ export default function UserManagementPage() {
     <div className="max-w-5xl mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-blue-900">User Management</h1>
-        <button className="btn btn-primary shadow-md" onClick={handleCreate}>Create New User</button>
+        {isAuthenticated && hasPermission('MANAGE_USERS') && (
+          <button className="btn btn-primary shadow-md" onClick={handleCreate}>Create New User</button>
+        )}
       </div>
       <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-4">
         {isLoading ? (
@@ -131,20 +135,24 @@ export default function UserManagementPage() {
                       {user.created_at ? new Date(user.created_at).toLocaleString() : ''}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap text-center space-x-1">
-                      <button
-                        className="inline-flex items-center justify-center p-2 rounded hover:bg-blue-100 text-blue-700 transition"
-                        title="Edit"
-                        onClick={() => handleEdit(user)}
-                      >
-                        <FaEdit />
-                      </button>
-                      <button
-                        className="inline-flex items-center justify-center p-2 rounded hover:bg-red-100 text-red-700 transition"
-                        title="Delete"
-                        onClick={() => handleDelete(user.id)}
-                      >
-                        <FaTrash />
-                      </button>
+                      {isAuthenticated && hasPermission('EDIT_USER') && (
+                        <button
+                          className="inline-flex items-center justify-center p-2 rounded hover:bg-blue-100 text-blue-700 transition"
+                          title="Edit"
+                          onClick={() => handleEdit(user)}
+                        >
+                          <FaEdit />
+                        </button>
+                      )}
+                      {isAuthenticated && hasPermission('DELETE_USER') && (
+                        <button
+                          className="inline-flex items-center justify-center p-2 rounded hover:bg-red-100 text-red-700 transition"
+                          title="Delete"
+                          onClick={() => handleDelete(user.id)}
+                        >
+                          <FaTrash />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

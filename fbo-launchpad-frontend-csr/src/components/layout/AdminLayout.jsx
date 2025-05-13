@@ -7,16 +7,16 @@ import { useAuth } from '../../contexts/AuthContext';
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated, hasPermission } = useAuth();
   const navigate = useNavigate();
 
   const navLinks = [
-    { to: '/admin/trucks', label: 'Manage Trucks', icon: <FaTruck /> },
-    { to: '/admin/users', label: 'Manage Users', icon: <FaUser /> },
-    { to: '/admin/aircraft', label: 'Manage Aircraft', icon: <FaPlane /> },
-    { to: '/admin/customers', label: 'Manage Customers', icon: <FaUsers /> },
-    { to: '/admin/roles', label: 'Manage Roles', icon: <FaUserShield /> },
-    { to: '/admin/permissions', label: 'System Permissions', icon: <FaKey /> },
+    { to: '/admin/trucks', label: 'Manage Trucks', icon: <FaTruck />, requiredPermission: 'MANAGE_TRUCKS' },
+    { to: '/admin/users', label: 'Manage Users', icon: <FaUser />, requiredPermission: 'MANAGE_USERS' },
+    { to: '/admin/aircraft', label: 'Manage Aircraft', icon: <FaPlane />, requiredPermission: 'MANAGE_AIRCRAFT' },
+    { to: '/admin/customers', label: 'Manage Customers', icon: <FaUsers />, requiredPermission: 'MANAGE_CUSTOMERS' },
+    { to: '/admin/roles', label: 'Manage Roles', icon: <FaUserShield />, requiredPermission: 'MANAGE_ROLES' },
+    { to: '/admin/permissions', label: 'System Permissions', icon: <FaKey />, requiredPermission: 'VIEW_ADMIN' },
   ];
 
   const handleLogout = async () => {
@@ -38,16 +38,18 @@ export default function AdminLayout() {
         </div>
         <nav className="flex-1 flex flex-col gap-2 p-4">
           {navLinks.map(link => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-2 rounded-lg transition font-medium ${isActive ? 'bg-blue-100 text-blue-700 shadow' : 'hover:bg-blue-50 text-gray-700'}`
-              }
-              onClick={() => setSidebarOpen(false)}
-            >
-              <span className="text-lg">{link.icon}</span> {link.label}
-            </NavLink>
+            isAuthenticated && hasPermission(link.requiredPermission) && (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-2 rounded-lg transition font-medium ${isActive ? 'bg-blue-100 text-blue-700 shadow' : 'hover:bg-blue-50 text-gray-700'}`
+                }
+                onClick={() => setSidebarOpen(false)}
+              >
+                <span className="text-lg">{link.icon}</span> {link.label}
+              </NavLink>
+            )
           ))}
         </nav>
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center gap-3">

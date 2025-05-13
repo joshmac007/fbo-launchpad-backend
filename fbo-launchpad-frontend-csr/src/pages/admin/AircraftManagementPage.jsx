@@ -3,6 +3,7 @@ import AircraftService from '../../services/AircraftService';
 import AircraftForm from '../../components/admin/AircraftForm';
 import Modal from '../../components/common/Modal';
 import AircraftTable from '../../components/admin/AircraftTable';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function AircraftManagementPage() {
   const [aircraftList, setAircraftList] = useState([]);
@@ -14,6 +15,7 @@ export default function AircraftManagementPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const { isAuthenticated, hasPermission } = useAuth();
 
   // Fetch aircraft list
   useEffect(() => {
@@ -115,7 +117,9 @@ export default function AircraftManagementPage() {
     <div className="max-w-5xl mx-auto py-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-blue-900">Aircraft Management</h1>
-        <button className="btn btn-primary shadow-md" onClick={handleCreate}>Add Aircraft</button>
+        {isAuthenticated && hasPermission('MANAGE_AIRCRAFT') && (
+          <button className="btn btn-primary shadow-md" onClick={handleCreate}>Add Aircraft</button>
+        )}
       </div>
 
       {successMessage && (
@@ -127,8 +131,8 @@ export default function AircraftManagementPage() {
       <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-4">
         <AircraftTable
           aircraftList={aircraftList}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onEdit={isAuthenticated && hasPermission('EDIT_AIRCRAFT') ? handleEdit : undefined}
+          onDelete={isAuthenticated && hasPermission('DELETE_AIRCRAFT') ? handleDelete : undefined}
           isLoading={isLoading}
         />
       </div>

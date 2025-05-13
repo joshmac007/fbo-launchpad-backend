@@ -1,8 +1,11 @@
 import React from "react";
 import StatusBadge from "../common/StatusBadge";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 const FuelOrdersTable = ({ orders = [], isLoading, error }) => {
+  const { isAuthenticated, hasPermission } = useAuth();
+
   if (isLoading) {
     return <div className="py-8 text-center text-gray-400">Loading orders...</div>;
   }
@@ -39,7 +42,7 @@ const FuelOrdersTable = ({ orders = [], isLoading, error }) => {
               <td className="px-4 py-2 text-sm">{order.created_at}</td>
               <td className="px-4 py-2 text-sm flex gap-2">
                 <Link to={`/orders/${order.id}`} className="text-blue-600 hover:underline text-xs font-medium">View</Link>
-                {order.status === "COMPLETED" && (
+                {order.status === "COMPLETED" && isAuthenticated && hasPermission('VIEW_RECEIPT') && (
                   <Link to={`/orders/${order.id}/receipt`} className="text-green-600 hover:underline text-xs font-medium">View Receipt</Link>
                 )}
               </td>

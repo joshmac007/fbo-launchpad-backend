@@ -45,6 +45,10 @@ class UserService:
 
             # Default sort by username ascending
             users = query.order_by(User.username.asc()).all()
+            # --- Add Debugging ---
+            from flask import current_app
+            current_app.logger.info(f"DEBUG: UserService.get_users found {len(users)} users: {users}")
+            # --- End Debugging ---
             return users, "Users retrieved successfully", 200
 
         except Exception as e:
@@ -111,6 +115,9 @@ class UserService:
 
         except Exception as e:
             db.session.rollback()
+            # Add explicit logging
+            from flask import current_app
+            current_app.logger.error(f"Caught exception in create_user: {e}", exc_info=True) 
             return None, f"Error creating user: {str(e)}", 500
 
     @classmethod

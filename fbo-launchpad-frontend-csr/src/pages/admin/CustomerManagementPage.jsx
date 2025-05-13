@@ -4,6 +4,7 @@ import CustomerForm from '../../components/admin/CustomerForm';
 import Modal from '../../components/common/Modal';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import CustomerTable from '../../components/admin/CustomerTable';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function CustomerManagementPage() {
   const [customerList, setCustomerList] = useState([]);
@@ -14,6 +15,7 @@ export default function CustomerManagementPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const { isAuthenticated, hasPermission } = useAuth();
 
   useEffect(() => {
     fetchCustomers();
@@ -85,13 +87,15 @@ export default function CustomerManagementPage() {
     <div className="max-w-5xl mx-auto py-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-blue-900">Customer Management</h1>
-        <button className="btn btn-primary shadow-md" onClick={handleCreate}>Add Customer</button>
+        {isAuthenticated && hasPermission('MANAGE_CUSTOMERS') && (
+          <button className="btn btn-primary shadow-md" onClick={handleCreate}>Add Customer</button>
+        )}
       </div>
       <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-4">
         <CustomerTable
           customerList={customerList}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onEdit={isAuthenticated && hasPermission('EDIT_CUSTOMER') ? handleEdit : undefined}
+          onDelete={isAuthenticated && hasPermission('DELETE_CUSTOMER') ? handleDelete : undefined}
           isLoading={isLoading}
         />
       </div>

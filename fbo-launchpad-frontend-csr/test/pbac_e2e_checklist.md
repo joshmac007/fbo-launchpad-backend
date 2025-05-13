@@ -1,0 +1,29 @@
+# PBAC E2E Test Checklist
+
+| Persona         | Scenario                                   | Steps                                                                                                   | Expected Result                                                                                  | Pass/Fail | Notes |
+|----------------|--------------------------------------------|--------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|-----------|-------|
+| Admin          | Login & Permission Fetch                   | 1. Login as Admin. <br>2. Observe dashboard load.                                                      | Login successful, admin dashboard visible, all admin sections accessible.                       |           |       |
+| CSR            | Login & Permission Fetch                   | 1. Login as CSR. <br>2. Observe dashboard load.                                                        | Login successful, CSR dashboard visible, CSR actions available.                                 |           |       |
+| LST            | Login & Permission Fetch                   | 1. Login as LST. <br>2. Observe dashboard load.                                                        | Login successful, LST dashboard visible, only assigned orders shown.                            |           |       |
+| CSR            | Dashboard UI Elements                      | 1. Login as CSR. <br>2. Check for "Create New Order" and "Export CSV" buttons. <br>3. View order list. | Both buttons visible. All orders listed.                                                        |           |       |
+| CSR            | Order Creation                             | 1. Login as CSR. <br>2. Create new order. <br>3. Verify order appears in dashboard.                    | Order created successfully, appears in dashboard.                                               |           |       |
+| CSR            | Order Review Button (Completed Order)      | 1. Login as CSR. <br>2. Open a 'COMPLETED' order. <br>3. Check for "Mark as Reviewed" button.         | Button visible. Clicking marks as reviewed, UI updates.                                         |           |       |
+| CSR            | Order Review Button (Non-Completed Order)  | 1. Login as CSR. <br>2. Open a non-completed order. <br>3. Check for "Mark as Reviewed" button.       | Button not visible or disabled.                                                                 |           |       |
+| LST            | Order List Filtering                       | 1. Login as LST. <br>2. View order list. <br>3. Check for unassigned/other users' orders.              | Only assigned orders visible. No "Create New Order" or "Export CSV" buttons.                      |           |       |
+| LST            | Update Assigned Order Status               | 1. Login as LST. <br>2. Update status of assigned order.                                               | Status update succeeds.                                                                         |           |       |
+| LST            | Update Unassigned Order Status             | 1. Login as LST. <br>2. Attempt to update unassigned order status.                                    | Action forbidden (403), UI shows error or disables action.                                      |           |       |
+| LST            | Complete Assigned Order                    | 1. Login as LST. <br>2. Complete assigned order.                                                       | Completion succeeds.                                                                            |           |       |
+| Admin          | Admin Navigation & Access                  | 1. Login as Admin. <br>2. Navigate to User, Role, Permission, Aircraft, Customer management.           | All admin sections accessible.                                                                  |           |       |
+| Admin          | Role Management                            | 1. Login as Admin. <br>2. Create custom role. <br>3. Assign only VIEW_ALL_ORDERS. <br>4. Assign user. | Custom role created, permissions assigned, user updated.                                         |           |       |
+| Custom Role    | Permission Verification                    | 1. Login as user with custom role. <br>2. Try to create/review orders, access admin.                   | Only order viewing allowed. Other actions forbidden (UI/API 403).                               |           |       |
+| Admin          | User Management                            | 1. Login as Admin. <br>2. Edit user roles. <br>3. User logs in again.                                 | Role changes take effect on next login.                                                         |           |       |
+| All (Negative) | Forbidden Action (UI)                      | 1. Login as user lacking permission. <br>2. Check for forbidden UI elements.                          | UI elements hidden or disabled.                                                                 |           |       |
+| All (Negative) | Forbidden Action (API)                     | 1. Login as user lacking permission. <br>2. Attempt forbidden API call (via dev tools/script).         | API returns 403 Forbidden, frontend shows error or disables action.                             |           |       |
+
+---
+
+**Instructions:**
+- For each scenario, perform the steps as the specified persona.
+- Mark Pass/Fail and add any notes or bug references.
+- For negative cases, ensure both UI and API enforcement.
+- Add new scenarios as needed for additional coverage or discovered edge cases. 

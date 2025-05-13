@@ -29,7 +29,8 @@ from src.schemas import (
     FuelTruckCreateRequestSchema,
     FuelTruckCreateResponseSchema,
     OrderStatusCountsSchema,
-    OrderStatusCountsResponseSchema
+    OrderStatusCountsResponseSchema,
+    UserPermissionsResponseSchema
 )
 
 def create_app(config_name=None):
@@ -148,6 +149,7 @@ def create_app(config_name=None):
         apispec.components.schema("LoginRequestSchema", schema=LoginRequestSchema)
         apispec.components.schema("LoginSuccessResponseSchema", schema=LoginSuccessResponseSchema)
         apispec.components.schema("ErrorResponseSchema", schema=ErrorResponseSchema)
+        apispec.components.schema("UserPermissionsResponseSchema", schema=UserPermissionsResponseSchema)
 
         # Register User Admin Schemas
         from src.schemas.user_schemas import (
@@ -226,9 +228,10 @@ def create_app(config_name=None):
         apispec.components.schema("PermissionListResponseSchema", schema=PermissionListResponseSchema)
 
         # Register Auth Views
-        from src.routes.auth_routes import register, login
+        from src.routes.auth_routes import register, login, get_my_permissions
         apispec.path(view=register, bp=auth_bp)
         apispec.path(view=login, bp=auth_bp)
+        apispec.path(view=get_my_permissions, bp=auth_bp)
 
         # Register User Views
         from src.routes.user_routes import get_users

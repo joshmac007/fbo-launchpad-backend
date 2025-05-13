@@ -104,3 +104,24 @@ class AuthService:
             
         # Return user object for token creation in route
         return user
+
+    @staticmethod
+    def get_user_effective_permissions(user):
+        """
+        Retrieves a unique list of all permission names assigned to the user through their roles.
+        Returns (permissions_list, message, status_code)
+        """
+        if not user or not hasattr(user, 'roles') or user.roles.count() == 0:
+            return [], "User has no assigned roles or permissions.", 200
+
+        effective_permissions = set()
+        try:
+            for role in user.roles.all():  # Efficiently fetch all roles
+                if hasattr(role, 'permissions'):
+                    for permission in role.permissions.all():  # Efficiently fetch all permissions
+                        effective_permissions.add(permission.name)
+            sorted_permissions = sorted(list(effective_permissions))
+            return sorted_permissions, "Effective permissions retrieved successfully.", 200
+        except Exception as e:
+            print(f"Error calculating effective permissions for user {getattr(user, 'id', None)}: {str(e)}")
+            return None, f"Error calculating effective permissions: {str(e)}", 500
