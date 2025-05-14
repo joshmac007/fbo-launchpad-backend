@@ -16,6 +16,7 @@ class UserCreateRequestSchema(Schema):
 class UserUpdateRequestSchema(Schema):
     """Schema for user update requests."""
     name = fields.String(required=False)
+    email = fields.Email(required=False)
     role_ids = fields.List(fields.Integer(), required=False)
     is_active = fields.Boolean(required=False)
     password = fields.String(required=False, load_only=True, validate=validate.Length(min=6))

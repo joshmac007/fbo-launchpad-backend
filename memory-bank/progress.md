@@ -29,6 +29,7 @@ Content from: fbo-launchpad-frontend-csr/tasks/progress.md
 - **Auth & Routing**: AuthContext, token persistence, protected routes
 - **Order Management**: CRUD, filters, pagination, CSV export
 - [x] Admin User Management frontend complete and tested.
+- [x] Admin User Management System Update (Edit/Delete features) implemented. Archive: [docs/archive/feature-user-management-update-20240726.md](docs/archive/feature-user-management-update-20240726.md)
 - [x] Admin Truck Management frontend complete and tested.
 - [x] Admin Aircraft Management frontend structure scaffolded (placeholder service, form, table, page, routing).
 - [x] Admin Customer Management frontend structure scaffolded (placeholder service, form, table, page, routing).

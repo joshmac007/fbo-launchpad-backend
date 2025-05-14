@@ -1,7 +1,9 @@
 from typing import Tuple, List, Optional, Dict, Any, Set
+from flask import g, has_request_context # Import g and has_request_context
 
 from ..models.user import User
 from ..models.role import Role
+from ..models.permission import Permission
 from ..extensions import db
 
 
@@ -129,6 +131,7 @@ class UserService:
             data (Dict[str, Any]): Dictionary containing update data
                 Supported keys:
                 - name (str): User's name
+                - email (str): User's email address
                 - role_ids (List[int]): List of role IDs to assign
                 - is_active (bool): User's active status
                 - password (str): User's new password (optional)
@@ -140,13 +143,41 @@ class UserService:
                 - HTTP status code
         """
         try:
-            user = User.query.get(user_id)
-            if not user:
+            user_to_update = User.query.get(user_id)
+            if not user_to_update:
                 return None, f"User with ID {user_id} not found", 404
+
+            current_user = None
+            if has_request_context() and hasattr(g, 'current_user'):
+                current_user = g.current_user
+
+            # Self-update prevention checks
+            if current_user and current_user.id == user_to_update.id:
+                if 'is_active' in data and not data['is_active']:
+                    return None, "Cannot deactivate your own account.", 403
+                # Prevent removing own MANAGE_USERS permission if it's the only way they have it
+                if 'role_ids' in data:
+                    new_role_ids = set(data['role_ids'])
+                    # Check if user currently has MANAGE_USERS
+                    has_manage_users_now = user_to_update.has_permission('MANAGE_USERS')
+                    # Simulate permissions with new roles
+                    if has_manage_users_now:
+                        roles_with_manage_users = Role.query.join(Role.permissions).filter(Permission.name == 'MANAGE_USERS').all()
+                        manage_users_role_ids = {role.id for role in roles_with_manage_users}
+                        # If none of the new roles grant MANAGE_USERS, prevent update
+                        if not new_role_ids.intersection(manage_users_role_ids):
+                            return None, "Cannot remove your own MANAGE_USERS permission.", 403
 
             # Update fields if provided
             if 'name' in data:
-                user.username = data['name']
+                user_to_update.username = data['name']
+            
+            # Handle email update with uniqueness check
+            if 'email' in data and data['email'] != user_to_update.email:
+                existing_user = User.query.filter(User.email == data['email'], User.id != user_to_update.id).first()
+                if existing_user:
+                    return None, f"Email '{data['email']}' is already registered to another user.", 409
+                user_to_update.email = data['email']
 
             if 'role_ids' in data:
                 role_ids = data['role_ids']
@@ -160,21 +191,26 @@ class UserService:
                         found_ids = {role.id for role in roles}
                         invalid_ids = set(role_ids) - found_ids
                         return None, f"Invalid role IDs provided: {list(invalid_ids)}", 400
-                    user.roles = roles
+                    user_to_update.roles = roles
                 else:
-                    user.roles = []  # Clear all roles if empty list provided
+                    user_to_update.roles = []  # Clear all roles if empty list provided
 
             if 'is_active' in data:
-                user.is_active = bool(data['is_active'])
+                # Ensure this check doesn't conflict with the self-deactivation check above
+                if not (current_user and current_user.id == user_to_update.id and not data['is_active']):
+                     user_to_update.is_active = bool(data['is_active'])
 
             if 'password' in data:
-                user.set_password(data['password'])
+                user_to_update.set_password(data['password'])
 
             db.session.commit()
-            return user, "User updated successfully", 200
+            return user_to_update, "User updated successfully", 200
 
         except Exception as e:
             db.session.rollback()
+            # Add explicit logging if available
+            # from flask import current_app
+            # current_app.logger.error(f"Error updating user {user_id}: {e}", exc_info=True)
             return None, f"Error updating user: {str(e)}", 500
 
     @classmethod
@@ -191,16 +227,26 @@ class UserService:
                 - HTTP status code
         """
         try:
-            user = User.query.get(user_id)
-            if not user:
+            user_to_delete = User.query.get(user_id)
+            if not user_to_delete:
                 return False, f"User with ID {user_id} not found", 404
 
-            user.is_active = False
+            current_user = None
+            if has_request_context() and hasattr(g, 'current_user'):
+                current_user = g.current_user
+
+            if current_user and current_user.id == user_to_delete.id:
+                return False, "Cannot deactivate your own account using the delete operation. Use the update operation if you intend to change your active status.", 403
+
+            user_to_delete.is_active = False
             db.session.commit()
             return True, "User deactivated successfully", 200
 
         except Exception as e:
             db.session.rollback()
+            # Add explicit logging if available
+            # from flask import current_app
+            # current_app.logger.error(f"Error deactivating user {user_id}: {e}", exc_info=True)
             return False, f"Error deactivating user: {str(e)}", 500
 
     @classmethod

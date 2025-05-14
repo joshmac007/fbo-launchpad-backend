@@ -24,7 +24,7 @@ function App() {
   return (
     <DarkModeProvider>
       <AuthProvider>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+        <div className="min-h-screen bg-neutral-background text-neutral-text-primary transition-colors duration-300">
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />

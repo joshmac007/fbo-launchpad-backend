@@ -1,9 +1,82 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
 /* Tailwind directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  /* Primary Colors */
+  --primary: #2A628F;
+  --primary-hover: #1A4D78; /* Darker shade for hover */
+  --primary-light: #b9d9f5; /* For highlighted/secondary elements, hover */
+  --primary-dark: #0050b3; /* For focus states, important actions */
+  --primary-foreground: #FFFFFF;
+
+  /* Secondary Button Colors (derived for consistency, style guide doesn't explicitly list --secondary variable) */
+  --secondary: #F0F2F5; /* Light gray, from style guide secondary button light bg */
+  --secondary-hover: #E5E8ED; /* From style guide secondary button light hover bg */
+  --secondary-foreground: #2D3339; /* From style guide secondary button light text (matches neutral-text-primary) */
+
+  /* Neutral Colors */
+  --neutral-background: #F8F9FA;
+  --neutral-background-subtle: #EFF1F3; /* Defined value for subtle bg */
+  --neutral-surface: #FFFFFF;
+  --neutral-surface-hover: #F8F9FA; /* Light mode surface hover (slightly darker than surface) */
+  --neutral-border: #DEE2E6;
+  --neutral-text-primary: #2D3339;
+  --neutral-text-secondary: #525F7F;
+  --neutral-text-disabled: #868e96; /* Text Muted from style guide */
+  
+  /* Status Colors */
+  --status-success: #65D14D;
+  --status-warning: #ec8f33;
+  --status-error: #d64f4a;
+  --status-info: #2A628F; /* Uses Primary Light from style guide */
+
+  /* Focus Ring Color */
+  --primary-focus-ring: rgba(42, 98, 143, 0.2);
+
+  /* Input Specific (none needed for light mode as it uses neutral surface/border) */
+}
+
+/* Corrected dark mode selector to .dark to match DarkModeContext.tsx */
+.dark {
+  /* Primary Colors */
+  --primary: #4A82AF;
+  --primary-hover: #5A92BF; /* Lighter/brighter for dark mode hover */
+  --primary-light: #1A3A5F; /* For highlighted/secondary elements, hover */
+  --primary-dark: #0050b3; /* For focus states, important actions (consistent with light) */
+  --primary-foreground: #FFFFFF;
+
+  /* Secondary Button Colors */
+  --secondary: #252A2E; /* From style guide secondary button dark bg */
+  --secondary-hover: #303740; /* From style guide secondary button dark hover bg */
+  --secondary-foreground: #F8FAFC; /* From style guide secondary button dark text (matches neutral-text-primary dark) */
+
+  /* Neutral Colors */
+  --neutral-background: #171A1D;
+  --neutral-background-subtle: #121417; /* Defined value for dark subtle bg */
+  --neutral-surface: #1E2124;
+  --neutral-surface-hover: #252A2E; /* Dark mode surface hover (slightly lighter than dark surface) */
+  --neutral-border: #2D3339;
+  --neutral-text-primary: #F8FAFC;
+  --neutral-text-secondary: #A0AEC0;
+  --neutral-text-disabled: #6c757d; /* Text Muted dark from style guide */
+
+  /* Status Colors (Style guide implies these are generally consistent, but if specific dark variants are needed, define them) */
+  --status-success: #65D14D; 
+  --status-warning: #ec8f33;
+  --status-error: #d64f4a;
+  --status-info: #4A82AF; /* Uses Primary Dark from style guide */
+
+  /* Focus Ring Color */
+  --primary-focus-ring-dark: rgba(74, 130, 175, 0.2); /* Explicit dark mode focus ring variable */
+  /* Original --primary-focus-ring for dark mode is now specifically --primary-focus-ring-dark */
+
+  /* Input Specific Dark Background */
+  --input-background-dark: #252A2E; /* From style guide form elements dark bg */
+}
 
 /* Base styles */
 @layer base {
@@ -12,7 +85,10 @@
   }
   
   body {
-    @apply bg-gray-50 text-gray-900 min-h-screen font-sans;
+    background-color: var(--neutral-background);
+    color: var(--neutral-text-primary);
+    @apply min-h-screen;
+    font-family: 'Montserrat', sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -20,7 +96,12 @@
   }
 
   a {
-    @apply text-primary hover:text-primary-dark transition-colors duration-200;
+    color: var(--primary);
+    @apply transition-colors duration-200;
+  }
+
+  a:hover {
+    color: var(--primary-hover);
   }
 
   button:disabled {
@@ -66,13 +147,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Links */
 a {
-  color: var(--primary);
   text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-a:hover {
-  color: var(--primary-dark);
 }
 
 /* Buttons */

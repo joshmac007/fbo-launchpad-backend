@@ -92,7 +92,6 @@ export default function TruckManagementPage() {
             <table className="min-w-full text-sm rounded-xl overflow-hidden">
               <thead className="sticky top-0 z-10 bg-blue-50/80">
                 <tr>
-                  <th className="px-4 py-2 font-semibold text-left">ID</th>
                   <th className="px-4 py-2 font-semibold text-left">Name</th>
                   <th className="px-4 py-2 font-semibold text-left">Active</th>
                   <th className="px-4 py-2 font-semibold text-center">Actions</th>
@@ -101,13 +100,12 @@ export default function TruckManagementPage() {
               <tbody>
                 {trucks.map((truck, i) => (
                   <tr key={truck.id} className={i % 2 === 0 ? 'even:bg-gray-50' : ''}>
-                    <td className="px-4 py-2 whitespace-nowrap">{truck.id}</td>
                     <td className="px-4 py-2 whitespace-nowrap">{truck.truck_number}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${truck.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>{truck.is_active ? 'Yes' : 'No'}</span>
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap text-center space-x-1">
-                      {isAuthenticated && hasPermission('EDIT_TRUCK') && (
+                      {isAuthenticated && hasPermission('MANAGE_TRUCKS') && (
                         <button
                           className="inline-flex items-center justify-center p-2 rounded hover:bg-blue-100 text-blue-700 transition"
                           title="Edit"
@@ -116,7 +114,7 @@ export default function TruckManagementPage() {
                           <FaEdit />
                         </button>
                       )}
-                      {isAuthenticated && hasPermission('DELETE_TRUCK') && (
+                      {isAuthenticated && hasPermission('MANAGE_TRUCKS') && (
                         <button
                           className="inline-flex items-center justify-center p-2 rounded hover:bg-red-100 text-red-700 transition"
                           title="Delete"

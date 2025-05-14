@@ -1,6 +1,11 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FuelOrder, OrderStatus } from '../../types/orders';
+import StatusBadge from '../common/StatusBadge';
+import Button from '../common/Button';
+import { useAuth } from '../../contexts/AuthContext';
+import EmptyState from '../common/EmptyState';
+import { FileText, PlusCircle } from 'lucide-react';
 
 interface FuelOrdersTableProps {
   orders: FuelOrder[] | null;
@@ -8,16 +13,17 @@ interface FuelOrdersTableProps {
   error: Error | null;
 }
 
-export const FuelOrdersTable: React.FC<FuelOrdersTableProps> = ({
+const FuelOrdersTable: React.FC<FuelOrdersTableProps> = ({
   orders,
   loading,
   error,
 }) => {
   const navigate = useNavigate();
+  const { isAuthenticated, hasPermission } = useAuth();
 
   if (loading) {
     return (
-      <div className="p-6 text-center text-gray-500">
+      <div className="py-lg px-md text-center text-neutral-text-secondary italic rounded-md border border-neutral-border bg-neutral-surface">
         Loading orders...
       </div>
     );
@@ -25,7 +31,7 @@ export const FuelOrdersTable: React.FC<FuelOrdersTableProps> = ({
 
   if (error) {
     return (
-      <div className="p-6 text-center text-red-500">
+      <div className="py-lg px-md text-center text-status-error-text rounded-md border border-status-error-border bg-status-error-surface">
         Error loading orders: {error.message}
       </div>
     );
@@ -33,71 +39,70 @@ export const FuelOrdersTable: React.FC<FuelOrdersTableProps> = ({
 
   if (!orders || orders.length === 0) {
     return (
-      <div className="p-6 text-center text-gray-500">
-        No orders found
-      </div>
+      <EmptyState
+        icon={<FileText size={48} />}
+        title="No Fuel Orders Found"
+        message="New fuel orders will appear here once created."
+        className="py-xl"
+      />
     );
   }
 
-  const getStatusClass = (status: OrderStatus) => {
-    switch (status) {
-      case OrderStatus.PENDING:
-        return 'bg-yellow-100 text-yellow-800';
-      case OrderStatus.IN_PROGRESS:
-        return 'bg-blue-100 text-blue-800';
-      case OrderStatus.COMPLETED:
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="overflow-x-auto bg-neutral-surface rounded-lg border border-neutral-border shadow-sm">
+      <table className="min-w-full divide-y divide-neutral-border">
+        <thead className="bg-neutral-surface-subtle">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aircraft</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fuel Type</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">ID</th>
+            <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">Aircraft</th>
+            <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">Customer</th>
+            <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">Fuel Type</th>
+            <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">Quantity</th>
+            <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">Status</th>
+            <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">Created</th>
+            <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-neutral-surface divide-y divide-neutral-border">
           {orders.map((order) => (
-            <tr key={order.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{order.id}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.aircraft}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.customer}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.fuelType}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.quantity} gal</td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(order.status)}`}>
-                  {order.status}
-                </span>
+            <tr key={order.id} className="hover:bg-neutral-surface-hover transition-colors">
+              <td className="px-md py-sm whitespace-nowrap text-sm-medium text-primary">#{order.id}</td>
+              <td className="px-md py-sm whitespace-nowrap text-sm-regular text-neutral-text-primary">{order.tail_number}</td>
+              <td className="px-md py-sm whitespace-nowrap text-sm-regular text-neutral-text-primary">{order.customer}</td>
+              <td className="px-md py-sm whitespace-nowrap text-sm-regular text-neutral-text-primary">{order.fuel_type}</td>
+              <td className="px-md py-sm whitespace-nowrap text-sm-regular text-neutral-text-primary">{order.requested_amount} gal</td>
+              <td className="px-md py-sm whitespace-nowrap">
+                <StatusBadge status={order.status} />
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {new Date(order.created).toLocaleDateString()}
+              <td className="px-md py-sm whitespace-nowrap text-sm-regular text-neutral-text-secondary">
+                {new Date(order.created_at).toLocaleDateString()}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <button
-                  onClick={() => navigate(`/orders/${order.id}`)}
-                  className="text-blue-600 hover:text-blue-900"
-                >
-                  View
-                </button>
-                {order.status === OrderStatus.COMPLETED && (
-                  <button
-                    onClick={() => navigate(`/orders/${order.id}/receipt`)}
-                    className="ml-4 text-blue-600 hover:text-blue-900"
+              <td className="px-md py-sm whitespace-nowrap">
+                <div className="flex items-center gap-sm">
+                  <Button 
+                    as={Link} 
+                    to={`/orders/${order.id}`} 
+                    variant="link"
+                    size="xs"
+                    aria-label={`View order ${order.id}`}
+                    onClick={() => {}}
                   >
-                    View Receipt
-                  </button>
-                )}
+                    View
+                  </Button>
+                  {order.status === OrderStatus.COMPLETED && isAuthenticated && 
+                    hasPermission && hasPermission('VIEW_RECEIPT') && (
+                    <Button 
+                      as={Link} 
+                      to={`/orders/${order.id}/receipt`} 
+                      variant="success"
+                      size="xs"
+                      aria-label={`View receipt for order ${order.id}`}
+                      onClick={() => {}}
+                    >
+                      View Receipt
+                    </Button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}
@@ -105,4 +110,6 @@ export const FuelOrdersTable: React.FC<FuelOrdersTableProps> = ({
       </table>
     </div>
   );
-}; 
+};
+
+export default FuelOrdersTable; 

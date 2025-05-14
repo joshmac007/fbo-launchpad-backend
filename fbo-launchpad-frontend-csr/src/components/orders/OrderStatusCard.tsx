@@ -1,49 +1,73 @@
 import React from 'react';
-import { IconClock, IconPlane, IconCheck } from '../../components/common/Icons';
+import { Clock, Send, CheckCircle2, AlertTriangle } from 'lucide-react';
+import Card from '../common/Card';
+import Button from '../common/Button';
 
 interface OrderStatusCardProps {
   title: string;
   description: string;
   count: number;
-  icon: 'clock' | 'plane' | 'check';
+  status: 'pending' | 'inProgress' | 'completed' | 'cancelled';
   onViewAll: () => void;
 }
 
-const iconMap = {
-  clock: IconClock,
-  plane: IconPlane,
-  check: IconCheck,
+const statusConfig = {
+  pending: {
+    Icon: Clock,
+    iconBgClass: 'bg-status-warning-surface',
+    iconTextClass: 'text-status-warning-text',
+  },
+  inProgress: {
+    Icon: Send,
+    iconBgClass: 'bg-status-info-surface',
+    iconTextClass: 'text-status-info-text',
+  },
+  completed: {
+    Icon: CheckCircle2,
+    iconBgClass: 'bg-status-success-surface',
+    iconTextClass: 'text-status-success-text',
+  },
+  cancelled: {
+    Icon: AlertTriangle,
+    iconBgClass: 'bg-status-error-surface',
+    iconTextClass: 'text-status-error-text',
+  },
 };
 
-export const OrderStatusCard: React.FC<OrderStatusCardProps> = ({
+const OrderStatusCard: React.FC<OrderStatusCardProps> = ({
   title,
   description,
   count,
-  icon,
+  status,
   onViewAll,
 }) => {
-  const Icon = iconMap[icon];
+  const { Icon, iconBgClass, iconTextClass } = statusConfig[status];
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-            <Icon className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold">{count}</h3>
-            <p className="text-sm text-gray-500">{title}</p>
+    <Card className="flex flex-col justify-between h-full">
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-sm">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${iconBgClass}`}>
+              <Icon className={`w-5 h-5 ${iconTextClass}`} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-neutral-text-primary">{count}</h3>
+              <p className="text-sm text-neutral-text-secondary">{title}</p>
+            </div>
           </div>
         </div>
+        <p className="text-sm text-neutral-text-secondary mb-4">{description}</p>
       </div>
-      <p className="text-sm text-gray-600 mb-4">{description}</p>
-      <button
+      <Button
+        variant="link"
         onClick={onViewAll}
-        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+        className="mt-auto self-start"
       >
         View All
-      </button>
-    </div>
+      </Button>
+    </Card>
   );
-}; 
+};
+
+export default OrderStatusCard; 
