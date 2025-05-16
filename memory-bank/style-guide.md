@@ -21,8 +21,8 @@
 
 | Color Name     | Light Mode (`#Hex`) | Dark Mode (`#Hex`) | Usage                                   |
 | :------------- | :------------------ | :----------------- | :-------------------------------------- |
-| Background     | `#F8F9FA`           | `#171A1D`          | Overall page background                 |
-| Surface        | `#FFFFFF`           | `#1E2124`          | Card backgrounds, elevated surfaces     |
+| Background     | `#FFFFFF`           | `#171A1D`          | Overall page background                 |
+| Surface        | `#F8F9FA`           | `#1E2124`          | Card backgrounds, elevated surfaces     |
 | Border         | `#DEE2E6`           | `#2D3339`          | Dividers, borders                       |
 | Text Primary   | `#2D3339`           | `#F8FAFC`          | Primary text content                    |
 | Text Secondary | `#525F7F`           | `#A0AEC0`          | Secondary text, labels, inactive icons  |
@@ -44,7 +44,7 @@ These colors are generally consistent across light and dark modes to maintain th
 **Philosophy:** Typography is based on Montserrat for a modern and highly readable interface. A clear typographic scale and consistent font weights are used to establish visual hierarchy and guide the user.
 
 ### 2.1. Font Family
-* **Primary Font:** Montserrat
+* **Primary Font:** Montserrat (Fallback: sans-serif)
 * **CSS Import:** `@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');` (Ensure all used weights are imported)
 * **CSS Stack:** `font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;`
 
@@ -61,25 +61,45 @@ These colors are generally consistent across light and dark modes to maintain th
 | H1 (Page Title) | `26px`    | `700` (Bold) | `1.2`       | Main page titles                  |
 | H2 (Section)    | `18px`    | `600` (Semibold) | `1.3`       | Section headings                  |
 | H3 (Card/Sub)   | `16px`    | `600` (Semibold) | `1.4`       | Card titles, subsections          |
-| Body            | `15px`    | `400` (Regular) | `1.5`       | Main content text                 |
+| Body            | `16px`    | `400` (Regular) | `1.6`       | Main content text                 |
 | Small           | `14px`    | `400` (Regular) | `1.5`       | Secondary text (e.g., user details) |
 | Caption         | `13px`    | `400` (Regular) | `1.4`       | Helper text, captions, metadata   |
 | Tiny (Label)    | `12px`    | `500` (Medium)  | `1.4`       | Small labels, badges              |
 
-## 3. Spacing System
+### Body Text
+- **Font Family:** Montserrat (Fallback: sans-serif)
+- **Weight:** Regular (400), Medium (500)
+- **Size:** 16px (`text-base`)
+- **Line Height:** 1.6 (`leading-relaxed`)
+- **Color:** `neutral-text-primary` (light mode), `neutral-text-primary-dark` (dark mode)
 
-**Philosophy:** A consistent 4px grid system is employed for all spacing (padding, margins, gaps) to ensure visual harmony and rhythm across the application.
+## 3. Spacing & Sizing
 
-| Size Name | Value  | Suggested Usage                                       |
-| :-------- | :----- | :---------------------------------------------------- |
-| `xs`      | `4px`  | Minimal spacing, icon padding within tight elements   |
-| `sm`      | `8px`  | Tight spacing, between related inline elements        |
-| `md`      | `16px` | Standard spacing, padding inside components (buttons, inputs) |
-| `lg`      | `24px` | Generous spacing, margins between components, card padding |
-| `xl`      | `32px` | Section spacing, large component padding, page margins |
-| `2xl`     | `48px` | Major page section spacing                            |
+The design system uses a 4px base unit for spacing and sizing. Consistent spacing is key to a clean and readable UI.
 
-*(Tailwind CSS equivalents: `xs`= `p-1`, `sm`=`p-2`, `md`=`p-4`, `lg`=`p-6`, `xl`=`p-8`, `2xl`=`p-12`)*
+- **Base Spacing Unit:** 4px (Tailwind: `1` unit, e.g., `p-1`, `m-1`, `space-x-1`, `gap-1`)
+- **Scale:**
+    - `xs`: 8px (Tailwind: `2` units, e.g., `p-2`, `m-2`)
+    - `sm`: 12px (Tailwind: `3` units, e.g., `p-3`, `m-3`)
+    - `md`: 16px (Tailwind: `4` units, e.g., `p-4`, `m-4`) - *Standard paragraph spacing, component internal padding*
+    - `lg`: 24px (Tailwind: `6` units, e.g., `p-6`, `m-6`) - *Section padding, larger gaps*
+    - `xl`: 32px (Tailwind: `8` units, e.g., `p-8`, `m-8`)
+    - `2xl`: 48px (Tailwind: `12` units, e.g., `p-12`, `m-12`)
+
+**Tailwind Usage:**
+- Use padding utilities (`p-`, `px-`, `py-`, `pt-`, `pr-`, `pb-`, `pl-`) for internal spacing within components.
+- Use margin utilities (`m-`, `mx-`, `my-`, `mt-`, `mr-`, `mb-`, `ml-`) for external spacing between components.
+- Use gap utilities (`gap-`, `gap-x-`, `gap-y-`) for spacing between grid and flex items.
+- Use space utilities (`space-x-`, `space-y-`) for spacing between direct child elements.
+
+*(Note: The table format for spacing was removed for clarity and replaced with a list format for better alignment with Tailwind unit descriptions.)*
+
+### Color Palette & Tailwind
+- **Primary Colors:** Defined in `tailwind.config.js` (e.g., `primary`, `secondary`) and correspond to CSS variables in `src/styles/global.css` (e.g., `var(--primary)`).
+- **Neutral Colors:** Defined similarly (e.g., `neutral-background`, `neutral-text-primary`).
+- **Accent Colors:** Defined similarly (e.g., `accent-info`, `accent-success`).
+
+**Note on Tailwind Implementation:** Colors in `tailwind.config.js` are mapped to CSS variables (e.g., `primary: 'var(--primary)'`). These CSS variables are then defined in `src/styles/global.css` for both light and dark themes. This allows for dynamic theme switching while leveraging Tailwind's utility classes. For example, `bg-primary` will correctly apply the primary background color based on the active theme. This is the established and correct pattern.
 
 ## 4. Border Radius & Shadows
 
@@ -130,7 +150,7 @@ import { Bell } from 'lucide-react';
 ### 6.1. Cards
 
   * **Light Mode:**
-      * Background: `Surface` (`#FFFFFF`)
+      * Background: `Background` (`#FFFFFF`)
       * Border: `1px solid Border` (`#DEE2E6`)
   * **Dark Mode:**
       * Background: `Surface` (`#1E2124`)
@@ -366,5 +386,4 @@ import { Bell } from 'lucide-react';
 
 *(Other component examples like Fuel Orders, Receipts, Footer can be similarly mapped and included if needed, or kept in separate component documentation that references this style guide.)*
 
-```
 ```

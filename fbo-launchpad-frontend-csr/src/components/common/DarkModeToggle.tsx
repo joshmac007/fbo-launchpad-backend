@@ -20,9 +20,9 @@ const DarkModeToggle: React.FC<DarkModeToggleProps> = ({ className = '' }) => {
       title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {darkMode ? (
-        <Sun size={20} className="text-yellow-400 dark:text-yellow-300" />
+        <Sun size={20} className="text-yellow-400 dark:text-yellow-300 animate-icon-scale-in" />
       ) : (
-        <Moon size={20} className="text-neutral-600 dark:text-neutral-400" />
+        <Moon size={20} className="text-neutral-600 dark:text-neutral-400 animate-icon-scale-in" />
       )}
     </Button>
   );

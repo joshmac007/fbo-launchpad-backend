@@ -33,6 +33,7 @@ Content from: fbo-launchpad-frontend-csr/tasks/progress.md
 - [x] Admin Truck Management frontend complete and tested.
 - [x] Admin Aircraft Management frontend structure scaffolded (placeholder service, form, table, page, routing).
 - [x] Admin Customer Management frontend structure scaffolded (placeholder service, form, table, page, routing).
+- [x] **UI Redesign & TypeScript Migration**: Comprehensive frontend overhaul based on `style-guide.md`, including full migration to TypeScript. Archive: [archive/archive-UI-Redesign-Styleguide-L4-20240727.md](archive/archive-UI-Redesign-Styleguide-L4-20240727.md)
 - **Testing**: Vitest, React Testing Library, backend pytest
 - **UI/UX**: Responsive, loading/error states, modular components
 - **Styling**: Tailwind/PostCSS config (see [ui_implementation.md](ui_implementation.md))

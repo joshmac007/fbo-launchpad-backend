@@ -5,10 +5,8 @@ import Button from '../common/Button';
 
 interface OrderStatusCardProps {
   title: string;
-  description: string;
   count: number;
   status: 'pending' | 'inProgress' | 'completed' | 'cancelled';
-  onViewAll: () => void;
 }
 
 const statusConfig = {
@@ -36,17 +34,15 @@ const statusConfig = {
 
 const OrderStatusCard: React.FC<OrderStatusCardProps> = ({
   title,
-  description,
   count,
   status,
-  onViewAll,
 }) => {
   const { Icon, iconBgClass, iconTextClass } = statusConfig[status];
 
   return (
-    <Card className="flex flex-col justify-between h-full">
+    <Card padding="md">
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
           <div className="flex items-center gap-sm">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${iconBgClass}`}>
               <Icon className={`w-5 h-5 ${iconTextClass}`} />
@@ -57,15 +53,7 @@ const OrderStatusCard: React.FC<OrderStatusCardProps> = ({
             </div>
           </div>
         </div>
-        <p className="text-sm text-neutral-text-secondary mb-4">{description}</p>
       </div>
-      <Button
-        variant="link"
-        onClick={onViewAll}
-        className="mt-auto self-start"
-      >
-        View All
-      </Button>
     </Card>
   );
 };

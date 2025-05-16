@@ -40,34 +40,21 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Order Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md mb-xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md mb-xl">
         <OrderStatusCard
-          title="Pending Orders"
-          description="Orders waiting for action"
+          title="Pending"
           count={stats.pending}
           status="pending"
-          onViewAll={() => navigate('/orders?status=pending')}
         />
         <OrderStatusCard
           title="In Progress"
-          description="Orders currently being processed"
           count={stats.inProgress}
           status="inProgress"
-          onViewAll={() => navigate('/orders?status=in-progress')}
         />
         <OrderStatusCard
-          title="Completed Orders"
-          description="Recently completed fuel orders"
+          title="Completed"
           count={stats.completed}
           status="completed"
-          onViewAll={() => navigate('/orders?status=completed')}
-        />
-        <OrderStatusCard
-          title="Cancelled Orders"
-          description="Orders that have been cancelled"
-          count={stats.cancelled}
-          status="cancelled"
-          onViewAll={() => navigate('/orders?status=cancelled')}
         />
       </div>
 

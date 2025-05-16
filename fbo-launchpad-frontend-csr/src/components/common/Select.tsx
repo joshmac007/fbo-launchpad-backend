@@ -47,7 +47,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>((
   };
 
   const baseSelectStyles =
-    'block w-full appearance-none bg-neutral-surface-default border border-neutral-border text-neutral-text-primary placeholder-neutral-text-disabled focus:outline-none focus:ring-2 focus:ring-primary-focus focus:border-primary-focus disabled:opacity-50 disabled:cursor-not-allowed';
+    'block w-full appearance-none bg-neutral-surface-default border border-neutral-border text-neutral-text-primary placeholder-neutral-text-disabled focus:outline-none focus:ring-2 focus:ring-primary-focus focus:border-primary-focus disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 ease-in-out';
   
   const errorStyles = error ? 'border-status-error-border focus:ring-status-error-focus focus:border-status-error-focus' : '';
 

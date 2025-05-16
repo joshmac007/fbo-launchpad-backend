@@ -17,9 +17,12 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="w-full bg-neutral-surface dark:bg-neutral-surface-alt border-b border-neutral-border dark:border-neutral-border-dark shadow-sm h-16 flex items-center justify-between px-lg z-50">
+    <nav className="w-full bg-neutral-surface dark:bg-neutral-surface-alt border-b border-neutral-border dark:border-neutral-border-dark shadow-sm h-16 flex items-center justify-between px-lg z-50" aria-label="Main navigation">
       <div className="flex items-center gap-md">
-        <Link to="/dashboard" className="flex items-center gap-xs text-primary dark:text-primary-dark hover:opacity-80 transition-opacity">
+        <Link 
+          to="/dashboard" 
+          className="flex items-center gap-xs text-primary dark:text-primary-dark hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-neutral-surface-alt rounded-sm"
+        >
           <Rocket className="h-6 w-6" />
           <span className="font-bold text-xl tracking-tight">
             FBO LaunchPad

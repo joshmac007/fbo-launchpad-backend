@@ -1,5 +1,19 @@
 # Active Context
 
+**Current Task ID:** None
+**Current Focus:** Awaiting next task or VAN mode initialization.
+
+This file will be updated by VAN mode when a new task is selected or created.
+
+**Last Task Completed:** UI Redesign & TypeScript Migration (Level 4)
+**Archive Link:** [archive/archive-UI-Redesign-Styleguide-L4-20240727.md](archive/archive-UI-Redesign-Styleguide-L4-20240727.md)
+
+**Immediate Blockers:** None.
+
+**Open Questions:** None.
+
+**General Notes:** The Memory Bank is ready for the next task. It is recommended to start in VAN mode to define the next objective.
+
 ## Current Focus / Development Focus
 - **Backend:**
     - PBAC schema and core logic implemented (Permissions, Roles, User relations).

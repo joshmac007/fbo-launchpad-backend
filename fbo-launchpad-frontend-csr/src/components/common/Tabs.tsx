@@ -9,7 +9,7 @@ interface TabButtonProps {
 
 const TabButton: React.FC<TabButtonProps> = ({ title, isActive, onClick }) => {
   // Style Guide: Padding sm (8px) vert, md (16px) horiz. Font Small (14px) Medium (500). Radius 6px (rounded-md).
-  const baseStyles = 'py-sm px-md cursor-pointer text-center focus:outline-none text-sm font-medium rounded-md transition-colors duration-200 ease-in-out'; 
+  const baseStyles = 'py-sm px-md cursor-pointer text-center focus:outline-none text-sm font-medium rounded-md transition-all duration-200 ease-in-out motion-safe:hover:translate-y-[-2px] motion-safe:active:translate-y-[1px]'; 
   
   // Style Guide Active: Bg Surface, Text Primary. Inactive: Text Secondary.
   const activeStyles = isActive

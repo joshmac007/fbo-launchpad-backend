@@ -19,9 +19,9 @@
   --secondary-foreground: #2D3339; /* From style guide secondary button light text (matches neutral-text-primary) */
 
   /* Neutral Colors */
-  --neutral-background: #F8F9FA;
+  --neutral-background: #FFFFFF;
   --neutral-background-subtle: #EFF1F3; /* Defined value for subtle bg */
-  --neutral-surface: #FFFFFF;
+  --neutral-surface: #F8F9FA;
   --neutral-surface-hover: #F8F9FA; /* Light mode surface hover (slightly darker than surface) */
   --neutral-border: #DEE2E6;
   --neutral-text-primary: #2D3339;
@@ -244,6 +244,40 @@ textarea {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-enter {
+  animation: pageEnter 0.3s ease-in-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-enter {
+    animation: none !important;
+  }
+}
+
+@keyframes iconScaleIn {
+  from { transform: scale(0.7); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.animate-icon-scale-in {
+  animation: iconScaleIn 0.2s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-icon-scale-in { animation: none !important; }
 }
 
 /* Responsive Design */

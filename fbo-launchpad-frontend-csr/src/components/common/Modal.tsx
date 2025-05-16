@@ -84,7 +84,7 @@ const Modal: React.FC<ModalProps> = ({
       aria-labelledby={title ? "modal-title" : undefined}
     >
       <div
-        className={`absolute inset-0 bg-neutral-900/50 dark:bg-black/70 backdrop-blur-sm transition-opacity animate-fadein ${overlayClassName}`}
+        className={`absolute inset-0 bg-neutral-900/50 dark:bg-black/70 backdrop-blur-sm animate-fadein ${overlayClassName}`}
         onClick={onClose}
         aria-label="Close modal overlay"
       />
@@ -115,6 +115,13 @@ const Modal: React.FC<ModalProps> = ({
         @keyframes scalein { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
         .animate-fadein { animation: fadein 0.2s ease; }
         .animate-scalein { animation: scalein 0.2s cubic-bezier(.4,0,.2,1); }
+
+        @media (prefers-reduced-motion: reduce) {
+          .animate-fadein,
+          .animate-scalein {
+            animation: none !important;
+          }
+        }
       `}</style>
     </div>
   );

@@ -91,7 +91,14 @@ const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>((
           onClick={() => !disabled && onChange && onChange({ target: { checked: !checked } } as React.ChangeEvent<HTMLInputElement>)} // Simulate click for visual part
           aria-hidden="true" // Since the actual input is handling ARIA
         >
-          {checked && <Check className={`${currentSize.icon} stroke-[3]`} />}
+          <Check 
+            className={`
+              ${currentSize.icon} 
+              stroke-[3] 
+              transition-all duration-150 ease-in-out 
+              ${checked ? 'opacity-100 motion-safe:scale-100' : 'opacity-0 motion-safe:scale-50'}
+            `}
+          />
         </div>
       </div>
       {label && labelSide === 'right' && labelContent}
