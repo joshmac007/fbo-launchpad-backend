@@ -1,11 +1,11 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FuelOrder, OrderStatus } from '../../types/orders';
-import StatusBadge from '../common/StatusBadge';
+import { FuelOrder, FuelOrderStatus as OrderStatus } from '../../types/fuelOrder';
+import OrderStatusBadge from '../common/OrderStatusBadge';
 import Button from '../common/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import EmptyState from '../common/EmptyState';
-import { FileText, PlusCircle } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 interface FuelOrdersTableProps {
   orders: FuelOrder[] | null;
@@ -55,7 +55,7 @@ const FuelOrdersTable: React.FC<FuelOrdersTableProps> = ({
           <tr>
             <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">ID</th>
             <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">Aircraft</th>
-            <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">Customer</th>
+            <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">Customer ID</th>
             <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">Fuel Type</th>
             <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">Quantity</th>
             <th className="px-md py-sm text-left text-xs-strong text-neutral-text-secondary uppercase tracking-wider">Status</th>
@@ -66,13 +66,15 @@ const FuelOrdersTable: React.FC<FuelOrdersTableProps> = ({
         <tbody className="bg-neutral-surface divide-y divide-neutral-border">
           {orders.map((order) => (
             <tr key={order.id} className="hover:bg-neutral-surface-hover transition-colors">
-              <td className="px-md py-sm whitespace-nowrap text-sm-medium text-primary">#{order.id}</td>
+              <td className="px-md py-sm whitespace-nowrap text-sm-medium text-primary">
+                <Link to={`/orders/${order.id}`} className="hover:underline">#{order.id}</Link>
+              </td>
               <td className="px-md py-sm whitespace-nowrap text-sm-regular text-neutral-text-primary">{order.tail_number}</td>
-              <td className="px-md py-sm whitespace-nowrap text-sm-regular text-neutral-text-primary">{order.customer}</td>
+              <td className="px-md py-sm whitespace-nowrap text-sm-regular text-neutral-text-primary">{order.customer_id ?? 'N/A'}</td>
               <td className="px-md py-sm whitespace-nowrap text-sm-regular text-neutral-text-primary">{order.fuel_type}</td>
-              <td className="px-md py-sm whitespace-nowrap text-sm-regular text-neutral-text-primary">{order.requested_amount} gal</td>
+              <td className="px-md py-sm whitespace-nowrap text-sm-regular text-neutral-text-primary">{order.requested_amount ? `${order.requested_amount} gal` : 'N/A'}</td>
               <td className="px-md py-sm whitespace-nowrap">
-                <StatusBadge status={order.status} />
+                <OrderStatusBadge status={order.status as string} />
               </td>
               <td className="px-md py-sm whitespace-nowrap text-sm-regular text-neutral-text-secondary">
                 {new Date(order.created_at).toLocaleDateString()}
@@ -85,7 +87,6 @@ const FuelOrdersTable: React.FC<FuelOrdersTableProps> = ({
                     variant="link"
                     size="xs"
                     aria-label={`View order ${order.id}`}
-                    onClick={() => {}}
                   >
                     View
                   </Button>
@@ -97,7 +98,6 @@ const FuelOrdersTable: React.FC<FuelOrdersTableProps> = ({
                       variant="success"
                       size="xs"
                       aria-label={`View receipt for order ${order.id}`}
-                      onClick={() => {}}
                     >
                       View Receipt
                     </Button>

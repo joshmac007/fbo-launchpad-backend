@@ -15,7 +15,7 @@ const Card: React.FC<CardProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'bg-neutral-background border border-neutral-border rounded-lg dark:bg-neutral-surface motion-safe:hover:translate-y-[-2px] transition-transform duration-200 ease-in-out';
+    'bg-neutral-background border border-neutral-border rounded-lg dark:bg-neutral-surface dark:border-neutral-surface transition-transform duration-200 ease-in-out';
 
   const paddingStyles: Record<CardPaddingSize, string> = {
     sm: 'p-3',

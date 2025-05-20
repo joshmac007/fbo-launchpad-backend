@@ -11,7 +11,8 @@ alwaysApply: false
 
 ```mermaid
 graph TD
-    Start["🚀 START QA MODE"] --> DetectPhase["🧭 PHASE DETECTION<br>Determine current project phase"]
+    Start["🚀 START QA MODE"] --> SmartContextLoad["🧠 LOAD SMART CONTEXT<br>Invoke smart-context-engine.mdc"]
+    SmartContextLoad --> DetectPhase["🧭 PHASE DETECTION<br>Determine current project phase"]
     
     %% Phase detection decision path
     DetectPhase --> PhaseDetermination{"Current Phase?"}

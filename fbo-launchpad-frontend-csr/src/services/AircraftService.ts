@@ -1,5 +1,4 @@
-import { API_BASE_URL } from '../config'; // Corrected path
-import { getAuthToken } from '../utils/auth'; // Assuming a utility to get auth token
+import apiService from './apiService'; // Import shared apiService
 
 // Define this based on actual API response and requirements
 export interface Aircraft {
@@ -18,65 +17,37 @@ export interface Aircraft {
 export type AircraftCreateDto = Omit<Aircraft, 'id' | 'created_at' | 'updated_at'>;
 export type AircraftUpdateDto = Partial<Omit<Aircraft, 'id' | 'created_at' | 'updated_at'> >;
 
-const AIRCRAFT_ENDPOINT = `${API_BASE_URL}/aircraft`;
-
-// Helper function for API requests
-async function fetchApi(url: string, options: RequestInit = {}) {
-  const token = getAuthToken();
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-    ...options.headers,
-  };
-
-  const response = await fetch(url, { ...options, headers });
-
-  if (!response.ok) {
-    let errorData;
-    try {
-      errorData = await response.json();
-    } catch (e) {
-      // Ignore if response is not JSON
-    }
-    const errorMessage = errorData?.message || errorData?.error || `HTTP error ${response.status}`;
-    throw new Error(errorMessage);
-  }
-  if (response.status === 204) { // No Content
-    return null;
-  }
-  return response.json();
-}
+const AIRCRAFT_ENDPOINT = '/aircraft'; // No API_BASE_URL prefix needed
 
 const AircraftService = {
   async getAircraft(): Promise<{ aircraft: Aircraft[] }> {
-    // In a real app, the backend might return an object like { data: Aircraft[] } or just Aircraft[]
-    // Adjust accordingly. For now, assuming it matches the mock structure.
-    const data = await fetchApi(AIRCRAFT_ENDPOINT);
-    return { aircraft: data || [] }; // Adjust based on actual API response structure
+    // Assuming apiService.get returns { data: { aircraft: Aircraft[] } } or similar
+    // Adjust based on actual apiService and backend response structure
+    const response = await apiService.get<{ aircraft: Aircraft[] }>(AIRCRAFT_ENDPOINT);
+    return response.data; // apiService.get directly returns response.data with axios
   },
 
   async getAircraftById(id: string): Promise<Aircraft> {
-    return fetchApi(`${AIRCRAFT_ENDPOINT}/${id}`);
+    const response = await apiService.get<Aircraft>(`${AIRCRAFT_ENDPOINT}/${id}`);
+    return response.data;
   },
 
   async createAircraft(aircraftData: AircraftCreateDto): Promise<Aircraft> {
-    return fetchApi(AIRCRAFT_ENDPOINT, {
-      method: 'POST',
-      body: JSON.stringify(aircraftData),
-    });
+    const response = await apiService.post<Aircraft>(AIRCRAFT_ENDPOINT, aircraftData);
+    return response.data;
   },
 
   async updateAircraft(id: string, aircraftData: AircraftUpdateDto): Promise<Aircraft> {
-    return fetchApi(`${AIRCRAFT_ENDPOINT}/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(aircraftData),
-    });
+    // Assuming PUT is the correct method, consistent with previous .ts file
+    const response = await apiService.put<Aircraft>(`${AIRCRAFT_ENDPOINT}/${id}`, aircraftData);
+    return response.data;
   },
 
   async deleteAircraft(id: string): Promise<void> {
-    await fetchApi(`${AIRCRAFT_ENDPOINT}/${id}`, {
-      method: 'DELETE',
-    });
+    // apiService.delete might not return data, or might return a confirmation
+    // Adjust based on apiService behavior and backend response
+    await apiService.delete(`${AIRCRAFT_ENDPOINT}/${id}`);
+    // No explicit return needed if the promise resolves successfully for void functions
   },
 };
 

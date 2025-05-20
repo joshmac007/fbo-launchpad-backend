@@ -1,8 +1,9 @@
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, FormEvent, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUsers } from '../services/UserService'; // Assuming UserService exports User[] or LSTUser[]
 import { getFuelTrucks } from '../services/FuelTruckService'; // Assuming FuelTruckService exports FuelTruck[]
-import { createFuelOrder } from '../services/FuelOrderService';
+import { createOrder } from '../services/FuelOrderService';
+import { useOrdersContext } from '../contexts/OrderContext'; // Import the context hook
 // import { useAuth } from '../contexts/AuthContext'; // Not directly used for permissions in this form logic
 
 import PageHeader from '../components/common/PageHeader';
@@ -16,7 +17,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 // Basic local type definitions - consider moving to src/types/
 interface LSTUser {
   id: string | number;
-  username: string; // Or full_name, display_name etc.
+  name: string; // Changed from username to name, to match User type
   // Add other relevant fields if needed by selection logic later (e.g., is_available)
 }
 
@@ -40,6 +41,7 @@ interface OrderFormData {
 
 const OrderCreatePage: React.FC = () => {
   const navigate = useNavigate();
+  const { refreshOrders } = useOrdersContext(); // Use the context
   // const { isAuthenticated, hasPermission } = useAuth(); // Keep if needed for conditional UI later
 
   const [formData, setFormData] = useState<OrderFormData>({
@@ -67,15 +69,27 @@ const OrderCreatePage: React.FC = () => {
       setIsLoadingData(true);
       setError(null);
       try {
-        // TODO: Ensure getUsers and getFuelTrucks are typed to return LSTUser[] and FuelTruck[] respectively
-        // For now, casting as any to proceed, but this should be fixed in services or with proper types.
-        const lstData = await getUsers() as LSTUser[]; 
-        const truckData = await getFuelTrucks() as FuelTruck[];
-        setLsts(lstData);
-        setTrucks(truckData);
-      } catch (err: any) {
+        const lstResponse = await getUsers();
+        setLsts(lstResponse.users || []); // Extract users array, default to [] if undefined
+
+        const truckResponse = await getFuelTrucks(); // We'll assume truckResponse is an array for now, or an object with a .trucks property
+        // This might need adjustment based on getFuelTrucks implementation
+        if (Array.isArray(truckResponse)) {
+          setTrucks(truckResponse);
+        } else if (truckResponse && typeof truckResponse === 'object' && 'trucks' in truckResponse && Array.isArray(truckResponse.trucks)) {
+          // Assuming a structure like { trucks: [] }
+          setTrucks(truckResponse.trucks);
+        } else {
+          // Fallback if the structure is unexpected or it's not an array
+          console.warn('Unexpected data structure for trucks, defaulting to empty array:', truckResponse);
+          setTrucks([]);
+        }
+
+      } catch (err: unknown) {
         setError('Failed to load LSTs or Trucks. Please ensure services are available and try again.');
         console.error('Dropdown loading error:', err);
+        setLsts([]); // Ensure lsts is an array on error
+        setTrucks([]); // Ensure trucks is an array on error
       } finally {
         setIsLoadingData(false);
       }
@@ -166,15 +180,16 @@ const OrderCreatePage: React.FC = () => {
       location_on_ramp: formData.location_on_ramp.trim(),
       additive_requested: formData.additive_requested,
       csr_notes: formData.csr_notes.trim(),
-      customer_id: formData.customer_id ? Number(formData.customer_id) : null,
+      customer_id: formData.customer_id.trim() ? Number(formData.customer_id.trim()) : undefined,
       assigned_lst_user_id: finalAssignedLstUserId,
       assigned_truck_id: finalAssignedTruckId,
     };
 
     try {
-      await createFuelOrder(orderPayload);
+      await createOrder(orderPayload);
       setSubmitSuccess(true);
       setError(null); // Clear previous errors on success
+      await refreshOrders(); // Refresh orders list
       // Keep success message for a bit then navigate
       setTimeout(() => navigate('/orders'), 2000); // Navigate to orders list or detail page
     } catch (err: any) {
@@ -185,7 +200,7 @@ const OrderCreatePage: React.FC = () => {
     }
   };
 
-  const lstOptions: SelectOption[] = lsts.map(lst => ({ value: lst.id, label: lst.username }));
+  const lstOptions: SelectOption[] = lsts.map(lst => ({ value: lst.id, label: lst.name }));
   const truckOptions: SelectOption[] = trucks.map(truck => ({ value: truck.id, label: truck.identifier }));
   const fuelTypeOptions: SelectOption[] = [
     { value: 'Jet A', label: 'Jet A' },

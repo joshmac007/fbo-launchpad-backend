@@ -96,3 +96,5 @@ Content from: fbo-launchpad-frontend-csr/tasks/progress.md
 - [ui_implementation.md](ui_implementation.md)
 
 - [2024-05-01] Backend refactor: Implemented LST auto-assign (-1) in POST /api/fuel-orders, added GET /api/fuel-orders/stats/status-counts endpoint, updated docstrings and OpenAPI docs, and removed obsolete queue/global assign logic. Frontend should use -1 for auto-assign and the new stats endpoint for dashboard counts. 
+
+Starting VAN task: Frontend testing and debugging. 

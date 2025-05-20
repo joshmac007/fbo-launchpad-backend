@@ -1,26 +1,26 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import StatusBadge from '../common/StatusBadge';
+import OrderStatusBadge from '../common/OrderStatusBadge';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import EmptyState from '../common/EmptyState';
-import { FileText } from 'lucide-react'; // Icon for empty state
-import { OrderStatus } from '../../types/orders'; // Assuming receipt status can reuse OrderStatus or a similar enum exists
+import { FileText } from 'lucide-react';
+import { FuelOrderStatus as OrderStatus } from '../../types/fuelOrder';
 
 // Define the Receipt type based on usage
 interface Receipt {
   receipt_id: string | number;
-  status: OrderStatus | string; // Allow string for flexibility if a separate ReceiptStatus enum isn't defined yet
+  status: OrderStatus | string;
   tail_number: string;
   aircraft_type: string;
   customer: string;
   fuel_type: string;
   calculated_gallons_dispensed: number | string;
-  completed_at?: string | null; // Make optional as it's checked
+  completed_at?: string | null;
 }
 
 interface RecentReceiptsProps {
-  receipts?: Receipt[]; // Make optional to handle undefined case leading to empty state
+  receipts?: Receipt[];
 }
 
 const RecentReceipts: React.FC<RecentReceiptsProps> = ({ receipts }) => {
@@ -42,8 +42,7 @@ const RecentReceipts: React.FC<RecentReceiptsProps> = ({ receipts }) => {
           <div>
             <div className="flex items-center justify-between mb-sm">
               <span className="text-md-semibold text-neutral-text-primary">Receipt #{receipt.receipt_id}</span>
-              {/* Assuming StatusBadge can handle string status or OrderStatus directly */}
-              <StatusBadge status={receipt.status as OrderStatus} /> 
+              <OrderStatusBadge status={receipt.status as string} /> 
             </div>
             <div className="grid grid-cols-2 gap-x-md gap-y-xs text-xs-regular mb-sm">
               <div className="text-neutral-text-secondary">Aircraft:</div>
@@ -60,12 +59,12 @@ const RecentReceipts: React.FC<RecentReceiptsProps> = ({ receipts }) => {
               </div>
             </div>
           </div>
-          <div className="mt-auto pt-sm"> {/* Added pt-sm for spacing */}
+          <div className="mt-auto pt-sm">
             <Button 
               as={Link} 
               to={`/receipts/${receipt.receipt_id}`} 
               variant="link"
-              size="sm" // Changed from xs for better consistency if applicable
+              size="sm"
               className="self-start text-primary hover:text-primary-hover focus:ring-primary"
             >
               View Receipt
@@ -77,4 +76,4 @@ const RecentReceipts: React.FC<RecentReceiptsProps> = ({ receipts }) => {
   );
 };
 
-export default RecentReceipts; 
+export default RecentReceipts;

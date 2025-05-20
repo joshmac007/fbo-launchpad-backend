@@ -7,6 +7,7 @@ import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import FuelOrdersPage from './pages/orders/FuelOrdersPage';
 import OrderCreatePage from './pages/OrderCreatePage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -34,7 +35,9 @@ function App() {
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
                 <Route element={<MainLayout />}>
-                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/orders" element={<FuelOrdersPage />} />
                   <Route path="/orders/new" element={<OrderCreatePage />} />
                   <Route path="/orders/:orderId" element={<OrderDetailPage />} />
                 </Route>

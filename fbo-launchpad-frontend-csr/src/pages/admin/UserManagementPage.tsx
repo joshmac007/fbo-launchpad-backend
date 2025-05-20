@@ -248,11 +248,16 @@ const UserManagementPage: React.FC = () => {
       <PageHeader 
         title="User Management"
         actions={
-          isAuthenticated && hasPermission('MANAGE_USERS') ? (
-            <Button variant="primary" onClick={handleCreate} icon={<UserPlus />}>
-              Add User
+          isAuthenticated && hasPermission('CREATE_USERS') && (
+            <Button 
+              onClick={handleCreate} 
+              variant="primary"
+              data-testid="add-user-button"
+            >
+              <UserPlus className="mr-xs h-sm w-sm" />
+              Create New User
             </Button>
-          ) : undefined
+          )
         }
       />
 

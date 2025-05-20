@@ -3,7 +3,6 @@ description: Visual process map for PLAN mode (Code Implementation)
 globs: plan-mode-map.mdc
 alwaysApply: false
 ---
-
 # PLAN MODE: TASK PLANNING PROCESS MAP
 
 > **TL;DR:** This visual map guides the PLAN mode process, focusing on creating detailed implementation plans based on the complexity level determined during initialization, with mandatory technology validation before implementation.
@@ -12,7 +11,8 @@ alwaysApply: false
 
 ```mermaid
 graph TD
-    Start["START PLANNING"] --> ReadTasks["Read tasks.md<br>Core/task-tracking.md"]
+    Start["START PLANNING"] --> SmartContextLoad["🧠 LOAD SMART CONTEXT<br>Invoke smart-context-engine.mdc"]
+    SmartContextLoad --> ReadTasks["Read tasks.md<br>Core/task-tracking.md"]
     
     %% Complexity Level Determination
     ReadTasks --> CheckLevel{"Determine<br>Complexity Level"}
@@ -33,7 +33,8 @@ graph TD
     Level3 --> L3Review["Review Codebase<br>Structure"]
     L3Review --> L3Requirements["Document Detailed<br>Requirements"]
     L3Requirements --> L3Components["Identify Affected<br>Components"]
-    L3Components --> L3Plan["Create Comprehensive<br>Implementation Plan"]
+    L3Components --> DefineIntent["Define Intent (New/Refactor)<br>& Identify Existing Targets<br>for each component"]
+    DefineIntent --> L3Plan["Create Comprehensive<br>Implementation Plan"]
     L3Plan --> L3Challenges["Document Challenges<br>& Solutions"]
     L3Challenges --> L3Update["Update tasks.md<br>with Plan"]
     L3Update --> L3Tech["TECHNOLOGY<br>VALIDATION"]

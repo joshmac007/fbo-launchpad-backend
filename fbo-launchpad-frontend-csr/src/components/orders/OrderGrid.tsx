@@ -1,7 +1,7 @@
 import React from 'react';
-import { FuelOrder, OrderStatus } from '../../types/orders'; // Assuming these types are available
+import { FuelOrder, FuelOrderStatus as OrderStatus } from '../../types/fuelOrder';
 import { formatDisplayValue } from '../../utils/formatters';
-import StatusBadge from '../common/StatusBadge';
+import OrderStatusBadge from '../common/OrderStatusBadge';
 import Button from '../common/Button';
 import EmptyState from '../common/EmptyState';
 import { Loader2, AlertTriangle, FolderOpen } from 'lucide-react'; // Icons
@@ -76,7 +76,7 @@ const OrderGrid: React.FC<OrderGridProps> = ({
               Tail Number
             </th>
             <th scope="col" className="px-lg py-md text-left text-xs-medium text-neutral-text-tertiary uppercase tracking-wider">
-              Assigned LST
+              Assigned LST User ID
             </th>
             <th scope="col" className="px-lg py-md text-left text-xs-medium text-neutral-text-tertiary uppercase tracking-wider">
               Created At
@@ -93,13 +93,13 @@ const OrderGrid: React.FC<OrderGridProps> = ({
                 {order.id}
               </td>
               <td className="px-lg py-md whitespace-nowrap">
-                <StatusBadge status={order.status as OrderStatus} />
+                <OrderStatusBadge status={order.status as string} />
               </td>
               <td className="px-lg py-md whitespace-nowrap text-sm-regular text-neutral-text-secondary">
                 {order.tail_number}
               </td>
               <td className="px-lg py-md whitespace-nowrap text-sm-regular text-neutral-text-secondary">
-                {order.assigned_lst?.username || order.assigned_lst_id || 'N/A'} 
+                {order.assigned_lst_user_id ?? 'N/A'}
               </td>
               <td className="px-lg py-md whitespace-nowrap text-sm-regular text-neutral-text-secondary">
                 {formatDisplayValue(order.created_at, 'datetime')}

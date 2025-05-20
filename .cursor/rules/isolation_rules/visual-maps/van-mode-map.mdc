@@ -17,8 +17,16 @@ graph TD
     CheckPath --> AdaptCmds["Adapt Commands if Needed"]
     AdaptCmds --> PlatformCP["⛔ PLATFORM CHECKPOINT"]
     
+    PlatformCP --> SmartContextLoad["🧠 LOAD SMART CONTEXT<br>Invoke smart-context-engine.mdc"]
+
+    %% Add Critical Memory Bank Checkpoint
+    SmartContextLoad --> MemoryBankCheck{"Memory Bank<br>Exists?"}
+    MemoryBankCheck -->|"No"| CreateMemoryBank["CREATE MEMORY BANK<br>[CRITICAL STEP]"]
+    MemoryBankCheck -->|"Yes"| BasicFileVerify["BASIC FILE VERIFICATION"]
+    CreateMemoryBank --> MemoryBankCP["⛔ MEMORY BANK VERIFICATION [REQUIRED]"]
+    MemoryBankCP --> BasicFileVerify
+    
     %% Basic File Verification with checkpoint
-    PlatformCP --> BasicFileVerify["BASIC FILE VERIFICATION"]
     BasicFileVerify --> BatchCheck["Batch Check Essential Components"]
     BatchCheck --> BatchCreate["Batch Create Essential Structure"]
     BatchCreate --> BasicFileCP["⛔ BASIC FILE CHECKPOINT"]

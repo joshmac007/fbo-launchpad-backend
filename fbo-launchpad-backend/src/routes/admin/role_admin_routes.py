@@ -38,8 +38,6 @@ def get_roles():
         403:
           description: Forbidden (missing permission)
     """
-    if request.method == 'OPTIONS':
-        return jsonify({'message': 'OPTIONS request successful'}), 200
     roles, msg, status = RoleService.get_all_roles()
     schema = RoleSchema(many=True)
     return jsonify({"roles": schema.dump(roles)}), status

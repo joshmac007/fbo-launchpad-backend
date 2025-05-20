@@ -1,5 +1,4 @@
-import { API_BASE_URL } from '../config';
-import { getAuthToken } from '../utils/auth';
+import apiService from './apiService'; // Import shared apiService
 
 // Define the Customer interface based on CustomerTable.jsx usage
 export interface Customer {
@@ -22,39 +21,27 @@ export interface CustomerListResponse {
 export type CustomerCreateDto = Omit<Customer, 'id' | 'created_at' | 'updated_at'>;
 export type CustomerUpdateDto = Partial<CustomerCreateDto>;
 
-const CUSTOMERS_ENDPOINT = `${API_BASE_URL}/customers`;
-
-// Basic fetchApi helper (can be moved to a shared util)
-async function fetchApi(url: string, options: RequestInit = {}) {
-  const token = getAuthToken();
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-    ...options.headers,
-  };
-  const response = await fetch(url, { ...options, headers });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: `HTTP error ${response.status}` }));
-    throw new Error(errorData.message || `HTTP error ${response.status}`);
-  }
-  return response.status === 204 ? null : response.json();
-}
+const CUSTOMERS_ENDPOINT = '/customers'; // No API_BASE_URL prefix needed
 
 const CustomerService = {
-  async getCustomers(): Promise<CustomerListResponse> { // Adjust if API returns Customer[] directly
-    return fetchApi(CUSTOMERS_ENDPOINT);
+  async getCustomers(): Promise<CustomerListResponse> { 
+    const response = await apiService.get<CustomerListResponse>(CUSTOMERS_ENDPOINT);
+    return response.data;
   },
   async getCustomerById(id: string | number): Promise<Customer> {
-    return fetchApi(`${CUSTOMERS_ENDPOINT}/${id}`);
+    const response = await apiService.get<Customer>(`${CUSTOMERS_ENDPOINT}/${id}`);
+    return response.data;
   },
   async createCustomer(data: CustomerCreateDto): Promise<Customer> {
-    return fetchApi(CUSTOMERS_ENDPOINT, { method: 'POST', body: JSON.stringify(data) });
+    const response = await apiService.post<Customer>(CUSTOMERS_ENDPOINT, data);
+    return response.data;
   },
   async updateCustomer(id: string | number, data: CustomerUpdateDto): Promise<Customer> {
-    return fetchApi(`${CUSTOMERS_ENDPOINT}/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    const response = await apiService.put<Customer>(`${CUSTOMERS_ENDPOINT}/${id}`, data);
+    return response.data;
   },
   async deleteCustomer(id: string | number): Promise<void> {
-    await fetchApi(`${CUSTOMERS_ENDPOINT}/${id}`, { method: 'DELETE' });
+    await apiService.delete(`${CUSTOMERS_ENDPOINT}/${id}`);
   },
   // Add any other customer-related service methods here
 };

@@ -3,7 +3,6 @@ description: Visual process map for REFLECT mode (Task Reflection)
 globs: "**/reflect*/**", "**/review*/**", "**/retrospect*/**"
 alwaysApply: false
 ---
-
 # REFLECT MODE: TASK REVIEW PROCESS MAP
 
 > **TL;DR:** This visual map guides the REFLECT mode process, focusing on structured review of the implementation, documenting lessons learned, and preparing insights for future reference.
@@ -12,7 +11,8 @@ alwaysApply: false
 
 ```mermaid
 graph TD
-    Start["START REFLECT MODE"] --> ReadTasks["Read tasks.md<br>and progress.md"]
+    Start["START REFLECT MODE"] --> SmartContextLoad["🧠 LOAD SMART CONTEXT<br>Invoke smart-context-engine.mdc"]
+    SmartContextLoad --> ReadTasks["Read tasks.md<br>and progress.md"]
     
     %% Initial Assessment
     ReadTasks --> VerifyImplement{"Implementation<br>Complete?"}

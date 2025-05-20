@@ -1,9 +1,4 @@
 ---
-description: 
-globs: 
-alwaysApply: true
----
----
 description: Defines canonical paths for core Memory Bank files.
 globs: memory-bank-paths.mdc
 alwaysApply: true

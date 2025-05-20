@@ -1,5 +1,5 @@
 import React from 'react';
-import { flexRender, getCoreRowModel, useReactTable, ColumnDef, Row } from '@tanstack/react-table';
+import { flexRender, getCoreRowModel, useReactTable, ColumnDef, Row, getSortedRowModel } from '@tanstack/react-table';
 import { ChevronUp, ChevronDown, ArrowUpDown, Loader2, AlertTriangle, Info } from 'lucide-react'; // For sorting icons & status
 
 // Props for the Table component
@@ -33,9 +33,8 @@ const Table = <TData extends object>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    // Add other table options like sorting, filtering, pagination as needed
-    // For now, basic client-side sorting can be enabled if desired by adding:
-    // getSortedRowModel: getSortedRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    // Add other table options like filtering, pagination as needed
   });
 
   if (isLoading) {

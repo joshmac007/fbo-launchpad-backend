@@ -1,0 +1,18 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "accessToken",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0NzcwNjk1OSwianRpIjoiOWZjNzIyZWUtNTJlNi00NmJiLTliMjUtY2M1OGE5YTQ4N2JkIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjciLCJuYmYiOjE3NDc3MDY5NTksImNzcmYiOiIzMmY5NmE3OS1jYjFjLTRlYWYtYmY5YS1kZjE0YzAzZDM0MDYiLCJleHAiOjE3NDc3MTA1NTksInVzZXJuYW1lIjoiTFNUIiwicm9sZXMiOlsiTGluZSBTZXJ2aWNlIFRlY2huaWNpYW4iXSwiaXNfYWN0aXZlIjp0cnVlfQ.z8AcDxUp3QzUVnGdR3ToV2EYGPf8d7dtHPXhWagqdtk"
+        },
+        {
+          "name": "darkMode",
+          "value": "false"
+        }
+      ]
+    }
+  ]
+}

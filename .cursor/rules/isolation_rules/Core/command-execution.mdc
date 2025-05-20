@@ -3,7 +3,6 @@ description: Command execution guidelines for isolation-focused Memory Bank
 globs: command-execution.mdc
 alwaysApply: false
 ---
-
 # COMMAND EXECUTION SYSTEM
 
 > **TL;DR:** This system provides guidelines for efficient command execution, balancing clarity and token optimization through appropriate command chaining, with proper documentation of commands and results.
@@ -232,4 +231,10 @@ graph TD
     W3 --> S3["Prefer built-in<br>command capabilities"]
     W4 --> S4["Show confirmation<br>before destructive actions"]
     W5 --> S5["Verify directory before<br>npm/build commands"]
-``` 
+```
+
+### ⚠️ Note on File Creation Commands (`create_file`, `new_file`, etc.):
+Before executing a command to create a new source file (e.g., `.md`, `.js`, `.py`, etc.) that represents a distinct component or feature:
+* **VERIFY INTENT:** Ensure this is genuinely for a *new* item and not a refactoring or modification of an existing one that was missed.
+* **CONSULT:** If the task involves refactoring or modification, the "Refactoring Context Strategy" in `smart-context-engine.mdc` MUST have been followed to search for and confirm the status of existing files.
+* **PRIORITIZE EDIT:** If an existing file is the target, use `edit_file` or similar commands on that existing file. 

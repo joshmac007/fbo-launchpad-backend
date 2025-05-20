@@ -143,6 +143,28 @@ sequenceDiagram
     Next->>Next: Continue with preserved context
 ```
 
+## 🧠 SMART CONTEXT MANAGEMENT & DEEP PROCESSING
+
+The Memory Bank System's **Context Manager** now invokes an enhanced `.cursor/rules/isolation_rules/Core/smart-context-engine.mdc`. This engine not only loads files but also performs:
+1.  **Hierarchical Summarization** of foundational project files.
+2.  **Query-Driven Incremental Deep Reading** of other task-relevant files as needed.
+
+```mermaid
+graph TD
+    CtxManager["Context Manager<br>(in main-optimized.mdc)"] --> InvokeSCE["Invoke Enhanced<br>smart-context-engine.mdc"]
+    InvokeSCE --> Phase1Summaries["Phase 1:<br>Hierarchical Summarization<br>of Foundational Files"]
+    Phase1Summaries --> StoreSummaries["Summaries Stored<br>(e.g., in activeContext.md<br>or AI scratchpad)"]
+    StoreSummaries --> Phase2DeepRead["Phase 2:<br>Query-Driven Incremental<br>Deep Reading of Supporting Files"]
+    Phase2DeepRead --> AIWorkingContext["AI Working Context<br>Prepared with Deep Understanding"]
+
+    style InvokeSCE fill:#ffa64d,stroke:#cc7a30,color:white
+    style Phase1Summaries fill:#cce6ff,stroke:#80bfff,color:black
+    style StoreSummaries fill:#e6ccff,stroke:#b380ff,color:black
+    style Phase2DeepRead fill:#cce6ff,stroke:#80bfff,color:black
+```
+
+This prepared context, including dynamically generated summaries and incrementally retrieved details, is then used by the AI for all subsequent operations within the current mode.
+
 ## 📊 MEMORY BANK EFFICIENT UPDATES
 
 ```mermaid

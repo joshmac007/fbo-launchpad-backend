@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import FuelTruckService from '../../services/FuelTruckService';
+import { 
+  getFuelTrucks, 
+  createFuelTruck, 
+  updateFuelTruck, 
+  deleteFuelTruck 
+} from '../../services/FuelTruckService';
 import TruckForm from '../../components/admin/TruckForm';
 import Modal from '../../components/common/Modal';
 import { FaEdit, FaTrash } from 'react-icons/fa';
@@ -22,7 +27,7 @@ export default function TruckManagementPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await FuelTruckService.getFuelTrucks();
+      const data = await getFuelTrucks();
       setTrucks(data);
     } catch (e) {
       setError('Failed to load trucks.');
@@ -38,7 +43,7 @@ export default function TruckManagementPage() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this truck?')) return;
     try {
-      await FuelTruckService.deleteFuelTruck(id);
+      await deleteFuelTruck(id);
       fetchTrucks();
     } catch (e) {
       alert('Delete failed.');
@@ -49,9 +54,9 @@ export default function TruckManagementPage() {
     setIsSubmitting(true);
     try {
       if (editingTruck && editingTruck.id) {
-        await FuelTruckService.updateFuelTruck(editingTruck.id, formData);
+        await updateFuelTruck(editingTruck.id, formData);
       } else {
-        await FuelTruckService.createFuelTruck(formData);
+        await createFuelTruck(formData);
       }
       setShowFormModal(false);
       setEditingTruck(null);
@@ -87,6 +92,7 @@ export default function TruckManagementPage() {
             variant="primary" 
             onClick={handleCreate}
             className="mt-sm sm:mt-0"
+            data-testid="add-truck-button"
           >
             <PlusCircle size={18} className="mr-xs" />
             Create New Truck

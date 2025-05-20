@@ -3,7 +3,6 @@ description: Visual process map for ARCHIVE mode (Task Documentation)
 globs: "**/archive*/**", "**/document*/**", "**/complete*/**"
 alwaysApply: false
 ---
-
 # ARCHIVE MODE: TASK DOCUMENTATION PROCESS MAP
 
 > **TL;DR:** This visual map guides the ARCHIVE mode process, focusing on creating comprehensive documentation of the completed task, archiving relevant files, and updating the Memory Bank for future reference.
@@ -12,7 +11,8 @@ alwaysApply: false
 
 ```mermaid
 graph TD
-    Start["START ARCHIVE MODE"] --> ReadTasks["Read tasks.md<br>reflection.md and<br>progress.md"]
+    Start["START ARCHIVE MODE"] --> SmartContextLoad["🧠 LOAD SMART CONTEXT<br>Invoke smart-context-engine.mdc"]
+    SmartContextLoad --> ReadTasks["Read tasks.md<br>reflection.md and<br>progress.md"]
     
     %% Initial Assessment
     ReadTasks --> VerifyReflect{"Reflection<br>Complete?"}

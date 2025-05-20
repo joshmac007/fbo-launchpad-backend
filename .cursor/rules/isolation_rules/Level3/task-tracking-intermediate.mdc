@@ -72,6 +72,12 @@ graph TD
 - Phase: [Current Phase]
 - Status: [In Progress/Blocked/Complete]
 - Blockers: [If any]
+
+## Intent
+[New_Feature / Refactor_Existing_Component / Enhance_Existing_Feature / Bug_Fix_In_Existing]
+
+## Refactoring Target (if Intent is Refactor/Enhance/Bug_Fix)
+[Path_to_existing_file or Component_name_to_search_for, or N/A]
 ```
 
 ## 🔄 PROGRESS TRACKING VISUALIZATION

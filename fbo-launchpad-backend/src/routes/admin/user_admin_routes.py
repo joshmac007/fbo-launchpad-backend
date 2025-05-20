@@ -69,6 +69,10 @@ def update_user(user_id):
     if not data:
         return jsonify({"error": "Request body cannot be empty"}), 400
 
+    # Remove 'id' from data if present, as it's not part of UserUpdateRequestSchema
+    # and user_id is passed via URL path
+    data.pop('id', None)
+
     schema = UserUpdateRequestSchema()
     try:
         validated_data = schema.load(data)

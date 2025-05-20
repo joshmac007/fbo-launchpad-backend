@@ -1,63 +1,48 @@
-import { API_BASE_URL } from '../config';
-import { getAuthToken } from '../utils/auth';
+import apiService from './apiService'; // Import shared apiService
 import { Role, RoleCreateDto, RoleUpdateDto, RoleListResponse as RolesApiResponse } from '../types/roles'; // Use types from types/roles
 import { Permission } from '../types/permissions'; // Use types from types/permissions
 
 // Removed local Role interface
 // Removed local Permission interface
 
-const ROLES_ENDPOINT = `${API_BASE_URL}/roles`;
-
-// Basic fetchApi helper (can be moved to a shared util)
-async function fetchApi<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const token = getAuthToken();
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-    ...options.headers,
-  };
-  const response = await fetch(url, { ...options, headers });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: `HTTP error ${response.status}` }));
-    throw new Error(errorData.message || `HTTP error ${response.status}`);
-  }
-  // Check for 204 No Content before .json()
-  if (response.status === 204) {
-    return null as T; // Or handle as appropriate for void promises
-  }
-  return response.json();
-}
+const ROLES_ENDPOINT = '/admin/roles'; // Changed from '/roles' to '/admin/roles'
 
 const RoleService = {
   // Ensure this matches the expected structure (e.g. { roles: Role[] } or Role[])
   async getRoles(): Promise<RolesApiResponse> { // Expecting { roles: Role[] }
-    // If API returns Role[] directly, change return type to Promise<Role[]> and adjust usage
-    const data = await fetchApi<RolesApiResponse | Role[]>(ROLES_ENDPOINT);
-    if (Array.isArray(data)) {
-        return { roles: data }; // Normalize to RolesApiResponse
+    const response = await apiService.get<RolesApiResponse | Role[]>(ROLES_ENDPOINT);
+    // If API returns Role[] directly, apiService.get would likely give Role[]. 
+    // If backend gives {roles: Role[]}, then RolesApiResponse is correct.
+    // Assuming backend response matches RolesApiResponse: { roles: Role[] }
+    if (Array.isArray(response.data)) {
+        return { roles: response.data }; // Normalize to RolesApiResponse if backend returns Role[]
     }
-    return data as RolesApiResponse; // Assuming it's already RolesApiResponse
+    return response.data as RolesApiResponse; // Or directly response.data if it matches RolesApiResponse
   },
   async getRoleById(id: number): Promise<Role> {
-    return fetchApi<Role>(`${ROLES_ENDPOINT}/${id}`);
+    const response = await apiService.get<Role>(`${ROLES_ENDPOINT}/${id}`);
+    return response.data;
   },
   async createRole(data: RoleCreateDto): Promise<Role> {
-    return fetchApi<Role>(ROLES_ENDPOINT, { method: 'POST', body: JSON.stringify(data) });
+    const response = await apiService.post<Role>(ROLES_ENDPOINT, data);
+    return response.data;
   },
   async updateRole(id: number, data: RoleUpdateDto): Promise<Role> {
-    return fetchApi<Role>(`${ROLES_ENDPOINT}/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    const response = await apiService.put<Role>(`${ROLES_ENDPOINT}/${id}`, data);
+    return response.data;
   },
   async deleteRole(id: number): Promise<void> {
-    await fetchApi<void>(`${ROLES_ENDPOINT}/${id}`, { method: 'DELETE' });
+    await apiService.delete(`${ROLES_ENDPOINT}/${id}`);
   },
   async getRolePermissions(roleId: number): Promise<Permission[]> {
-    return fetchApi<Permission[]>(`${ROLES_ENDPOINT}/${roleId}/permissions`);
+    const response = await apiService.get<Permission[]>(`${ROLES_ENDPOINT}/${roleId}/permissions`);
+    return response.data;
   },
   async assignPermissionToRole(roleId: number, permissionId: number): Promise<void> {
-    await fetchApi<void>(`${ROLES_ENDPOINT}/${roleId}/permissions/${permissionId}`, { method: 'POST' });
+    await apiService.post(`${ROLES_ENDPOINT}/${roleId}/permissions/${permissionId}`);
   },
   async removePermissionFromRole(roleId: number, permissionId: number): Promise<void> {
-    await fetchApi<void>(`${ROLES_ENDPOINT}/${roleId}/permissions/${permissionId}`, { method: 'DELETE' });
+    await apiService.delete(`${ROLES_ENDPOINT}/${roleId}/permissions/${permissionId}`);
   },
 };
 

@@ -3,7 +3,6 @@ description: Basic task tracking for Level 2 Simple Enhancement tasks
 globs: "**/level2/**", "**/tracking/**", "**/task/**"
 alwaysApply: false
 ---
-
 # BASIC TASK TRACKING FOR LEVEL 2
 
 > **TL;DR:** This document outlines a streamlined task tracking approach for Level 2 (Simple Enhancement) tasks. It provides a balanced framework for managing task progress with minimal overhead.
@@ -23,8 +22,10 @@ Level 2 tasks require a more structured tracking approach than Level 1, but don'
 ## 📋 TASK STRUCTURE FOR LEVEL 2
 
 ```markdown
-## [Feature Name] Enhancement
+## [Feature/Task Name]
 
+**Intent**: [New_Feature / Refactor_Existing_Component / Enhance_Existing_Feature / Bug_Fix_In_Existing]
+**Refactoring Target (if Intent is Refactor/Enhance/Bug_Fix)**: [Path_to_existing_file or Component_name_to_search_for, or N/A]
 **Status**: [Not Started/In Progress/Complete]
 **Priority**: [High/Medium/Low]
 **Estimated Effort**: [Small/Medium/Large]

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import OrderStatusCard from './OrderStatusCard';
 import FuelOrdersTable from './FuelOrdersTable';
-import { OrderStatus } from '../../types/orders';
+import { FuelOrderStatus as OrderStatus } from '../../types/fuelOrder';
 import { useOrders } from '../../hooks/useOrders';
 import Card from '../common/Card';
 import Button from '../common/Button';
@@ -21,11 +21,21 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (orders) {
+      const pendingCount = orders.filter(order => order.status === OrderStatus.PENDING).length;
+      const inProgressCount = orders.filter(order => 
+        order.status === OrderStatus.DISPATCHED ||
+        order.status === OrderStatus.ACKNOWLEDGED ||
+        order.status === OrderStatus.EN_ROUTE ||
+        order.status === OrderStatus.FUELING
+      ).length;
+      const completedCount = orders.filter(order => order.status === OrderStatus.COMPLETED).length;
+      const cancelledCount = orders.filter(order => order.status === OrderStatus.CANCELLED).length;
+
       setStats({
-        pending: orders.filter(order => order.status === OrderStatus.PENDING).length,
-        inProgress: orders.filter(order => order.status === OrderStatus.IN_PROGRESS).length,
-        completed: orders.filter(order => order.status === OrderStatus.COMPLETED).length,
-        cancelled: 0
+        pending: pendingCount,
+        inProgress: inProgressCount,
+        completed: completedCount,
+        cancelled: cancelledCount 
       });
     }
   }, [orders]);

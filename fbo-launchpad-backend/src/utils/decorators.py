@@ -28,8 +28,8 @@ def token_required(f):
     def decorated_function(*args, **kwargs):
         # Skip token verification for OPTIONS requests
         if request.method == 'OPTIONS':
-            resp = make_response() # Create an empty 200 OK response
-            return resp # Flask-CORS should add headers to this
+            resp = make_response() 
+            return resp 
             
         token = None
         auth_header = request.headers.get('Authorization')
@@ -99,8 +99,8 @@ def require_permission(permission_name: str):
         def _wrapper(*args, **kwargs):
             # Skip permission check for OPTIONS requests (CORS preflight)
             if request.method == 'OPTIONS':
-                resp = make_response() # Create an empty 200 OK response
-                return resp # Flask-CORS should add headers to this
+                resp = make_response() 
+                return resp 
 
             # 1. Check if user context exists (from @token_required)
             if not hasattr(g, 'current_user') or not g.current_user:

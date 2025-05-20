@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getFuelOrderById, reviewFuelOrder } from '../services/FuelOrderService'; // Corrected path
-import { formatDisplayValue } from '../utils/formatters'; // Corrected path
-import { useAuth } from '../contexts/AuthContext'; // Corrected path
-import { FuelOrder, OrderStatus } from '../types/orders'; // Corrected path
-import Card from '../components/common/Card'; // Corrected path
-import Button from '../components/common/Button'; // Corrected path
-import StatusBadge from '../components/common/StatusBadge'; // Corrected path
-import { Loader2, AlertTriangle, Info } from 'lucide-react'; // Icons
-import PageHeader from '../components/common/PageHeader'; // Corrected path, will verify existence
+import { getOrderById, reviewOrder } from '../services/FuelOrderService';
+import { FuelOrder, FuelOrderStatus as OrderStatus } from '../types/fuelOrder';
+import { formatDisplayValue } from '../utils/formatters';
+import { useAuth } from '../contexts/AuthContext';
+import Card from '../components/common/Card';
+import Button from '../components/common/Button';
+import OrderStatusBadge from '../components/common/OrderStatusBadge';
+import { Loader2, AlertTriangle, Info } from 'lucide-react';
+import PageHeader from '../components/common/PageHeader';
 
 const OrderDetailPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -30,8 +30,14 @@ const OrderDetailPage: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await getFuelOrderById(orderId);
-        setOrder(data);
+        const numericOrderId = parseInt(orderId, 10);
+        if (isNaN(numericOrderId)) {
+          setError('Invalid Order ID format.');
+          setIsLoading(false);
+          return;
+        }
+        const response = await getOrderById(numericOrderId);
+        setOrder(response.fuel_order);
       } catch (err: any) {
         setError(err.message || 'Failed to fetch order details');
       } finally {
@@ -48,8 +54,17 @@ const OrderDetailPage: React.FC = () => {
     setIsReviewing(true);
     setReviewError(null);
     try {
-      const updatedOrder = await reviewFuelOrder(orderId);
-      setOrder(updatedOrder);
+      const numericOrderId = parseInt(orderId, 10);
+      if (isNaN(numericOrderId)) {
+        setReviewError('Invalid Order ID for review.');
+        setIsReviewing(false);
+        return;
+      }
+      const response = await reviewOrder(numericOrderId);
+      setOrder(prevOrder => {
+        if (!prevOrder) return null;
+        return { ...prevOrder, ...response.fuel_order } as FuelOrder;
+      });
     } catch (err: any) {
       setReviewError(err.message || 'Failed to mark order as reviewed');
     } finally {
@@ -57,7 +72,6 @@ const OrderDetailPage: React.FC = () => {
     }
   };
 
-  // Detail Item component for consistent styling
   const DetailItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="py-sm sm:grid sm:grid-cols-3 sm:gap-md">
       <dt className="text-sm-medium text-neutral-text-secondary">{label}</dt>
@@ -114,24 +128,24 @@ const OrderDetailPage: React.FC = () => {
         <div className="p-lg">
           <dl className="divide-y divide-neutral-border-subtle">
             <DetailItem label="Order ID" value={order.id} />
-            <DetailItem label="Status" value={<StatusBadge status={order.status} />} />
-            <DetailItem label="Customer" value={order.customer} />
+            <DetailItem label="Status" value={<OrderStatusBadge status={order.status as string} />} />
+            <DetailItem label="Customer ID" value={order.customer_id} />
             <DetailItem label="Aircraft Tail Number" value={order.tail_number} />
             <DetailItem label="Fuel Type" value={order.fuel_type} />
             <DetailItem label="Requested Amount (Gallons)" value={order.requested_amount} />
             <DetailItem label="Created At" value={formatDisplayValue(order.created_at, 'datetime')} />
             
-            {order.completed_at && (
-              <DetailItem label="Completed At" value={formatDisplayValue(order.completed_at, 'datetime')} />
+            {order.completion_timestamp && (
+              <DetailItem label="Completed At" value={formatDisplayValue(order.completion_timestamp, 'datetime')} />
             )}
             
-            {order.assigned_lst && (
-                 <DetailItem label="Assigned LST" value={order.assigned_lst.username || order.assigned_lst_id} />
+            {order.assigned_lst_user_id !== null && order.assigned_lst_user_id !== undefined && (
+                 <DetailItem label="Assigned LST User ID" value={order.assigned_lst_user_id} />
             )}
 
-            {order.reviewed_at && (
+            {order.reviewed_timestamp && (
               <>
-                <DetailItem label="Reviewed At" value={formatDisplayValue(order.reviewed_at, 'datetime')} />
+                <DetailItem label="Reviewed At" value={formatDisplayValue(order.reviewed_timestamp, 'datetime')} />
                 <DetailItem label="Reviewed By (CSR ID)" value={order.reviewed_by_csr_user_id} />
               </>
             )}
@@ -144,12 +158,12 @@ const OrderDetailPage: React.FC = () => {
           <h2 className="text-lg-semibold text-neutral-text-primary mb-md">Order Review</h2>
           <Button
             onClick={handleMarkAsReviewed}
-            disabled={isReviewing || !!order.reviewed_at} // Disable if already reviewed
+            disabled={isReviewing || !!order.reviewed_timestamp}
             variant="primary"
             className="w-full sm:w-auto"
           >
             {isReviewing ? <Loader2 className="animate-spin mr-sm h-sm w-sm" /> : null}
-            {order.reviewed_at ? 'Already Reviewed' : (isReviewing ? 'Submitting Review...' : 'Mark as Reviewed')}
+            {order.reviewed_timestamp ? 'Already Reviewed' : (isReviewing ? 'Submitting Review...' : 'Mark as Reviewed')}
           </Button>
           {reviewError && (
             <p className="mt-sm text-sm-regular text-status-error-text">Error: {reviewError}</p>

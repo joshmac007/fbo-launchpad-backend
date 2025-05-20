@@ -1,6 +1,6 @@
 ---
 description: Defines the standard workflow for Level 3 (Intermediate Feature) tasks, guiding through comprehensive planning, targeted creative design, structured implementation, detailed reflection, and feature-specific archiving.
-globs: workflow-level3.mdc
+globs: **/Level3/**,**/Workflow/**
 alwaysApply: false
 ---
 

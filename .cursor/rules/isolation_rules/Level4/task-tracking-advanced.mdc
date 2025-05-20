@@ -3,7 +3,6 @@ description: Advanced task tracking for Level 4 Complex System tasks
 globs: "**/level4/**", "**/task-tracking/**"
 alwaysApply: false
 ---
-
 # ADVANCED TASK TRACKING FOR LEVEL 4 TASKS
 
 > **TL;DR:** This document outlines a comprehensive task tracking approach for Level 4 (Complex System) tasks, ensuring detailed tracking of complex, multi-phase work with clear dependencies, progress tracking, and architectural alignment.
@@ -463,4 +462,10 @@ For situations requiring a more compact tracking approach:
 │ tracking. All task-related decisions and status      │
 │ updates MUST be reflected in tasks.md.               │
 └─────────────────────────────────────────────────────┘
-``` 
+```
+
+## [Feature/Task Name]
+
+**Intent**: [New_Feature / Refactor_Existing_Component / Enhance_Existing_Feature / Bug_Fix_In_Existing]
+**Refactoring Target (if Intent is Refactor/Enhance/Bug_Fix)**: [Path_to_existing_file or Component_name_to_search_for, or N/A]
+(* ... other existing fields like Status, Priority, Description, Requirements, Subtasks ... *) 

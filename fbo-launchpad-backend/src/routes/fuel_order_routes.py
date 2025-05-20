@@ -8,6 +8,8 @@ from ..services.fuel_order_service import FuelOrderService
 from ..models.fuel_truck import FuelTruck
 from ..schemas import OrderStatusCountsResponseSchema, ErrorResponseSchema
 from ..extensions import db
+from ..models.aircraft import Aircraft
+from ..services.aircraft_service import AircraftService
 
 # Create the blueprint for fuel order routes
 fuel_order_bp = Blueprint('fuel_order_bp', __name__)
@@ -103,7 +105,7 @@ def create_fuel_order():
         'assigned_lst_user_id': int,
         'assigned_truck_id': int,
         # 'requested_amount': float, # Handled separately for robust conversion
-        'location_on_ramp': str
+        # 'location_on_ramp': str # Removed to allow Marshmallow to handle validation
     }
 
     # Validate requested_amount separately for robust conversion
@@ -143,6 +145,55 @@ def create_fuel_order():
                 return jsonify({"error": f"Invalid type for field: {field}"}), 400
             if field_type == str and not data[field].strip():
                  return jsonify({"error": f"Field {field} cannot be empty"}), 400
+
+    # --- START AIRCRAFT GET OR CREATE ---
+    tail_number_to_check = data['tail_number']
+    aircraft, _, aircraft_status_code = AircraftService.get_aircraft_by_tail(tail_number_to_check)
+
+    if aircraft_status_code == 404: # Aircraft not found, try to create it
+        logger.info(f"Aircraft with tail_number {tail_number_to_check} not found. Attempting to create.")
+        aircraft_data = {
+            'tail_number': tail_number_to_check,
+            'aircraft_type': data.get('aircraft_type', 'Unknown'), # Use provided or default
+            'fuel_type': data['fuel_type'] # Use fuel_type from order
+        }
+        # Check if 'aircraft_type' was provided in the request, if not, use a default.
+        # This is important because Aircraft model requires aircraft_type.
+        if 'aircraft_type' not in data or not data['aircraft_type']:
+             logger.warning(f"aircraft_type not provided for new tail_number {tail_number_to_check}. Defaulting to 'Unknown'.")
+             aircraft_data['aircraft_type'] = 'Unknown'
+
+
+        new_aircraft, message, new_aircraft_status_code = AircraftService.create_aircraft(aircraft_data)
+        if new_aircraft_status_code == 201:
+            logger.info(f"Successfully created new aircraft: {tail_number_to_check}")
+            aircraft = new_aircraft # Use the newly created aircraft
+        elif new_aircraft_status_code == 409: # Already exists, race condition? Try to get it again.
+            logger.warning(f"Aircraft {tail_number_to_check} already exists (encountered 409 on create), attempting to retrieve again.")
+            aircraft, _, aircraft_status_code = AircraftService.get_aircraft_by_tail(tail_number_to_check)
+            if not aircraft:
+                logger.error(f"Failed to retrieve aircraft {tail_number_to_check} after 409 on create: {message}")
+                return jsonify({"error": f"Failed to process aircraft {tail_number_to_check} after creation attempt: {message}"}), 500
+        else: # Other error creating aircraft
+            logger.error(f"Failed to create aircraft {tail_number_to_check}: {message} (Status: {new_aircraft_status_code})")
+            return jsonify({"error": f"Failed to create new aircraft {tail_number_to_check}: {message}"}), new_aircraft_status_code
+    elif aircraft_status_code != 200 and aircraft_status_code != 404: # Other error fetching aircraft
+        logger.error(f"Error fetching aircraft {tail_number_to_check}: (Status: {aircraft_status_code})")
+        return jsonify({"error": f"Error fetching aircraft details for {tail_number_to_check}"}), aircraft_status_code
+    
+    # At this point, 'aircraft' should hold the valid aircraft object (either existing or newly created)
+    # Or an error response would have been returned.
+    # We can also update the aircraft's fuel_type if it differs from the order,
+    # or if the aircraft was just created with a default.
+    if aircraft and aircraft.fuel_type != data['fuel_type']:
+        logger.info(f"Updating fuel_type for aircraft {aircraft.tail_number} from {aircraft.fuel_type} to {data['fuel_type']}.")
+        updated_aircraft, msg, status = AircraftService.update_aircraft(aircraft.tail_number, {'fuel_type': data['fuel_type']})
+        if status != 200:
+            logger.warning(f"Could not update fuel_type for aircraft {aircraft.tail_number}: {msg}")
+        else:
+            aircraft = updated_aircraft # ensure 'aircraft' variable has the latest state.
+
+    # --- END AIRCRAFT GET OR CREATE ---
 
     # LST Auto-assignment
     if data['assigned_lst_user_id'] == AUTO_ASSIGN_LST_ID:
@@ -265,8 +316,8 @@ def create_fuel_order():
         logger.exception("Exception in create_fuel_order")
         return jsonify({"error": f"Error creating fuel order: {str(e)}"}), 500
 
-@fuel_order_bp.route('', methods=['GET'])
-@fuel_order_bp.route('/', methods=['GET'])
+@fuel_order_bp.route('', methods=['GET', 'OPTIONS'])
+@fuel_order_bp.route('/', methods=['GET', 'OPTIONS'])
 @token_required
 def get_fuel_orders():
     import traceback

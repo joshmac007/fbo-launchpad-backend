@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PermissionService from '../../services/PermissionService';
-import { Permission } from '../../services/RoleService'; // Changed import source for Permission type
+import { Permission, PermissionListResponse } from '../../types/permissions'; // Changed import source for Permission type
 import Table, { ColumnDef } from '../../components/common/Table';
 import PageHeader from '../../components/common/PageHeader';
 import { toast } from 'react-hot-toast';
@@ -15,7 +15,7 @@ const PermissionListPage: React.FC = () => {
     setError(null);
     try {
       const data = await PermissionService.getPermissions();
-      setPermissions(data || []); // Assuming getPermissions directly returns Permission[] or null/undefined
+      setPermissions(data.permissions || []); // Using data.permissions since getPermissions returns PermissionListResponse
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to load permissions';
       setError(errorMessage);

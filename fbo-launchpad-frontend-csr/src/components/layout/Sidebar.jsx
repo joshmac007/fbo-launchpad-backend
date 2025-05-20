@@ -13,6 +13,7 @@ import {
   LogOut,
   Moon,
   Sun,
+  Users,
 } from 'lucide-react';
 
 // Reusable NavItem component for cleaner code
@@ -120,7 +121,7 @@ const SidebarComponent = () => {
           )}
           <div className={`flex flex-col ${isSidebarOpen ? 'gap-xs' : 'gap-sm'}`}>
             <NavItem to="/dashboard" icon={LayoutDashboard}>Dashboard</NavItem>
-            <NavItem to="/fuel-orders" icon={Fuel}>Fuel Orders</NavItem>
+            <NavItem to="/orders" icon={Fuel}>Fuel Orders</NavItem>
           </div>
         </div>
 
@@ -154,6 +155,9 @@ const SidebarComponent = () => {
               onClick={handleAdminSettingsClick}
             >
               Settings
+            </NavItem>
+            <NavItem to="/admin/users" icon={Users}>
+              Users Management
             </NavItem>
           </div>
         </div>

@@ -114,3 +114,5 @@ This file will be updated by VAN mode when a new task is selected or created.
 - **State Management:** Prefer component-level state. Use custom hooks for shared logic. Implement error boundaries.
 - **Common Pitfalls:** Avoid mixing implementations, assuming `children` prop, duplicating state, skipping hierarchy.
 - **Obsolete Code:** Be aware frontend calls obsolete backend APIs (LST Queue, Assignment Settings) that need removal.
+
+Current task: VAN - Run frontend tests, debug, and document.
